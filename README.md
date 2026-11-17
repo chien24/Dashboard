@@ -2,7 +2,9 @@
 
 Upload ảnh chụp màn hình báo cáo SCADA (HT1) và DMWCS (HT2). Hệ thống OCR bằng AI (Gemini → NVIDIA → OpenRouter), kiểm tra số liệu, lưu vào SQLite và vẽ dashboard theo ngày. Không cần Docker, không cần database server.
 
-![Dashboard](anh_chup/dashboard.png)
+<p align="center">
+  <img src="frontend/img/favicon.png" alt="OCR Dashboard CNKT3" width="240">
+</p>
 
 | `loai` | Màn hình |
 |---|---|
