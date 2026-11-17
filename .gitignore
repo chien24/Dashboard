@@ -3,6 +3,8 @@
 !/backend/
 !/frontend/
 !/README.md
+!/HUONG_DAN_DEPLOY.md
+!/start_backend.bat
 !/.gitignore
 
 .env
