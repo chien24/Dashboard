@@ -1,5 +1,19 @@
 {
-  "redirects": [
-    { "source": "/", "destination": "/html/index.html", "permanent": false }
-  ]
+    "redirects":  [
+                      {
+                          "source":  "/",
+                          "destination":  "/html/index.html",
+                          "permanent":  false
+                      }
+                  ],
+    "rewrites":  [
+                     {
+                         "source":  "/api/:path*",
+                         "destination":  "https://range-investigators-furthermore-quickly.trycloudflare.com/api/:path*"
+                     },
+                     {
+                         "source":  "/uploads/:path*",
+                         "destination":  "https://range-investigators-furthermore-quickly.trycloudflare.com/uploads/:path*"
+                     }
+                 ]
 }
