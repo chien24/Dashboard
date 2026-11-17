@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lịch sử báo cáo</title>
+<link rel="icon" type="image/png" href="../img/favicon.png">
+<script>try { const t = localStorage.getItem("theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
+<link rel="stylesheet" href="../css/base.css?v=5">
+<link rel="stylesheet" href="../css/history.css?v=2">
+</head>
+<body>
+<header class="brandbar"><a class="logo" href="index.html"><img src="../img/logo_viettel_post.webp" alt="Viettel Post" width="103" height="40"></a>
+  <span class="brand">OCR Dashboard CNKT3</span>
+  <button class="theme-btn" id="theme-btn" type="button"></button></header>
+<nav class="topnav">
+  <a href="index.html">Dashboard</a><a href="upload.html">Upload ảnh</a><a href="history.html" aria-current="page">Lịch sử</a></nav>
+<main>
+  <h1>Lịch sử báo cáo</h1>
+  <p class="sub">Mọi lần OCR trong 35 ngày gần nhất, kể cả bản đã bị ảnh mới hơn thay trên dashboard.</p>
+
+  <div class="search-bar">
+    <label class="search">Tìm theo tên file (tìm chung HT1 và HT2)
+      <input type="search" id="q" placeholder="vd: Screenshot 2026-11-16, 3.jpg" autocomplete="off"></label>
+    <label>Ngày báo cáo từ <input type="date" id="from"></label>
+    <label>đến <input type="date" id="to"></label>
+    <label>Trạng thái
+      <select id="status">
+        <option value="">Tất cả</option><option value="ok">OK</option>
+        <option value="can_kiem_tra">Cần kiểm tra</option><option value="da_sua_tay">Đã sửa tay</option>
+      </select></label>
+    <button class="btn" id="reset" type="button">Xóa bộ lọc</button>
+  </div>
+
+  <div class="tabs" role="tablist">
+    <button role="tab" aria-selected="true" data-tab="ht1">HT1 – SCADA <span class="count" id="c-ht1"></span></button>
+    <button role="tab" aria-selected="false" data-tab="ht2">HT2 – DMWCS (CBS) <span class="count" id="c-ht2"></span></button>
+  </div>
+  <p class="hint" id="summary" aria-live="polite"></p>
+
+  <section id="ht1"><div class="hist" id="list-ht1"></div></section>
+  <section id="ht2" hidden><div class="hist" id="list-ht2"></div></section>
+</main>
+<script src="../js/api.js?v=3"></script>
+<script src="../js/history.js?v=1"></script>
+</body>
+</html>

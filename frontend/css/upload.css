@@ -12,8 +12,6 @@
 .warn-box { margin: 8px 0; padding: 8px 12px; border-radius: 6px; background: color-mix(in srgb, var(--warn) 22%, transparent); color: var(--ink); font-size: 13px; }
 .warn-box ul { margin: 4px 0 0; padding-left: 18px; }
 tr.lech td { background: color-mix(in srgb, var(--crit) 18%, transparent); }
-.status-badge { font-size: 12px; padding: 1px 8px; border-radius: 10px; border: 1px solid var(--border); }
-.status-badge.ok { color: #0ca30c; } .status-badge.can_kiem_tra { color: var(--warn-ink); } .status-badge.da_sua_tay { color: var(--s1); }
 
 /* report.html: ảnh trái, form phải */
 .report { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(320px, 1fr); gap: 16px; margin-top: 12px; }

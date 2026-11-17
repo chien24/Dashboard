@@ -92,3 +92,30 @@ a { color: var(--accent); }
 .btn.primary:hover:not(:disabled) { background: var(--accent-hover); color: #fff; }
 .btn:disabled { opacity: .5; cursor: default; }
 .err { color: var(--crit); }
+.status-badge { font-size: 12px; padding: 1px 8px; border-radius: 10px; border: 1px solid var(--border); }
+.status-badge.ok { color: #0ca30c; } .status-badge.can_kiem_tra { color: var(--warn-ink); } .status-badge.da_sua_tay { color: var(--s1); }
+
+/* footer: luôn nền tối (cả 2 chế độ), bán trong suốt để vẫn thấy nền logistics phía sau; dính đáy khi trang ngắn */
+body { display: flex; flex-direction: column; }
+main { width: 100%; }
+.site-foot { position: relative; margin-top: auto; color: #c2c6cf; font-size: 13px;
+  background: linear-gradient(180deg, rgba(14,16,21,.84) 0%, rgba(14,16,21,.94) 100%); border-top: 1px solid rgba(255,255,255,.08); }
+.site-foot::before { content: ""; position: absolute; inset: -1px 0 auto; height: 2px; background: linear-gradient(90deg, transparent, var(--brand) 30%, var(--brand) 70%, transparent); }
+.foot-in, .foot-bottom { padding-inline: max(16px, calc((100% - 1240px) / 2 + 16px)); }
+.foot-in { display: grid; grid-template-columns: 1.2fr 1.4fr .8fr; gap: 24px 40px; padding-block: 32px 24px; }
+.foot-in p { margin: 0; }
+.foot-brand img { display: block; height: 36px; width: auto; filter: brightness(0) invert(1); margin-bottom: 12px; }
+.foot-name { font-size: 18px; font-weight: 600; color: #fff; }
+.foot-sub, .foot-hint { color: #8b919c; margin: 2px 0 10px !important; }
+.foot-col { display: grid; align-content: start; gap: 6px; padding-left: 28px; border-left: 1px solid rgba(255,255,255,.12); }
+.site-foot h4 { margin: 0 0 6px; font-size: 14px; color: #fff; }
+.site-foot a { color: #e6e8ec; text-decoration: none; width: fit-content; }
+.site-foot a:hover { color: #ff5c77; }
+.foot-line { display: flex; align-items: center; gap: 8px; }
+.site-foot svg { width: 16px; height: 16px; flex: none; }
+.foot-line svg { color: #ff5c77; }
+.foot-bottom { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 12px; font-size: 12px; color: #8b919c; border-top: 1px solid rgba(255,255,255,.08); }
+.to-top { display: grid; place-items: center; width: 34px; height: 34px; padding: 0; color: #fff; background: transparent; border: 1px solid rgba(255,255,255,.35); border-radius: 8px; cursor: pointer; }
+.to-top:hover { border-color: #ff5c77; color: #ff5c77; }
+.site-foot :focus-visible { outline-color: #fff; }
+@media (max-width: 760px) { .foot-in { grid-template-columns: 1fr; } .foot-col { padding-left: 0; border-left: 0; padding-top: 16px; border-top: 1px solid rgba(255,255,255,.12); } }

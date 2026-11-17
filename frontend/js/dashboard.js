@@ -180,9 +180,7 @@ function warnBadge(list) {
   if (!list.length) return `<span class="badge ok" title="Không có cảnh báo">✓ 0</span>`;
   return `<span class="badge" title="${esc(list.join("\n"))}">⚠ ${list.length}</span>`;
 }
-const kv = rows => `<div class="kv">${rows.map(([k, v]) => `<span>${esc(k)}</span><span>${v}</span>`).join("")}</div>`;
 const warnList = r => r.canh_bao || [];
-const editLink = r => r.report_id ? ` · <a href="report.html?id=${r.report_id}">Xem / sửa</a>` : "";
 function table(el, head, rows) {
   el.innerHTML = `<thead><tr>${head.map((h, i) => `<th class="${i < 2 ? "l" : ""}">${esc(h)}</th>`).join("")}</tr></thead>`
     + `<tbody>${rows.map(r => `<tr>${r.map((c, i) => `<td class="${i < 2 ? "l" : ""}">${c}</td>`).join("")}</tr>`).join("")}</tbody>`;
@@ -259,17 +257,6 @@ function renderH1() {
   if (!rows.length) rows.push([DASH, "Không có dữ liệu trong khoảng ngày đã chọn", ...Array(10).fill("")]);
   table($("h1-table"), ["Ngày", "Dây chuyền", "ALL", "CORRECT", "REJECT", "NOREAD", "NOPOST", "Tỷ lệ REJECT", "Công suất MAX", "Khung giờ MAX", "Thời gian sử dụng", "Cảnh báo"], rows);
 
-  $("h1-ref").innerHTML = recs.sort((a, b) => b.day.localeCompare(a.day)).map(x => `<details><summary>${dm(x.day)} · ${esc(x.line.ten)} ${warnBadge(warnList(x.r))}${editLink(x.r)}</summary><div>`
-    + kv([["Dây chuyền (giá trị gốc)", esc(x.r.day_chuyen)], ["Thời gian quét", esc(x.r.thoi_gian_tu + " → " + x.r.thoi_gian_den)],
-          ["Số lượng gói theo lưới", fInt(x.r.so_luong_goi_theo_luoi)], ["Số lượng bưu kiện bất thường", fInt(x.r.so_buu_kien_bat_thuong)],
-          ["Tỷ lệ bất thường", fDec(x.r.ty_le_bat_thuong) + "%"], ["Thời gian quét trung bình", fDec(x.r.thoi_gian_quet_trung_binh, 4)],
-          ["Khung giờ công suất MAX", esc(x.r.cong_suat_max_tu + " → " + x.r.cong_suat_max_den)],
-          ["File · model", esc(`${x.r.file} · ${x.r.model} / ${x.r.model_lan_2 ?? DASH}`)]])
-    + `<div class="tbl-wrap"><table><thead><tr><th class="l">Loại bất thường (hiển thị)</th><th class="l">Nhãn OCR gốc</th><th>Số lượng</th><th>Tỷ lệ</th><th class="l">Dùng cho</th></tr></thead><tbody>`
-    + x.pb.map(p => `<tr><td class="l">${esc(p.ten)}</td><td class="l">${esc(p.loai)}</td><td>${fInt(p.so_luong)}</td><td>${fDec(p.ty_le)}%</td><td class="l">${esc(p.dung)}</td></tr>`).join("")
-    + `</tbody></table></div><p class="note">Tỷ lệ tính trên số bưu kiện bất thường. Tổng có thể > 100% vì một bưu kiện có thể thuộc nhiều loại.</p>`
-    + (warnList(x.r).length ? `<b>Cảnh báo</b><ul class="warns">${warnList(x.r).map(w => `<li>${esc(w)}</li>`).join("")}</ul>` : "")
-    + `</div></details>`).join("") || `<p class="hint">Không có dữ liệu trong khoảng ngày đã chọn.</p>`;
 }
 initRange("h1", H1.map(x => x.day), renderH1);
 ["h1-line", "h1-metric"].forEach(id => $(id).addEventListener("change", renderH1));
@@ -325,29 +312,6 @@ function renderH2() {
   });
   if (!rows.length) rows.push([DASH, "Không có dữ liệu trong khoảng ngày đã chọn", ...Array(9).fill("")]);
   table($("h2-table"), ["Ngày", "Nguồn", "ALL", "CORRECT", "trong đó PDA", "REJECT", "Tỷ lệ CORRECT", "Tỷ lệ REJECT", "Công suất AVG", "Thời gian sử dụng", "Cảnh báo"], rows);
-
-  const sortedRefs = D.filter(x => x.s).reverse().map(({ day, s }) => `<details><summary>${dm(day)} · Sorted parcels ${warnBadge(warnList(s))}${editLink(s)}</summary><div>`
-    + kv([["Thời gian", esc(s.thoi_gian_tu + " → " + s.thoi_gian_den)], ["PDA", fInt(s.pda)],
-          ["NoRead", `${fInt(s.no_read.so_luong)} (${fDec(s.no_read.ty_le)}%)`], ["NoPostOffice", `${fInt(s.no_post_office.so_luong)} (${fDec(s.no_post_office.ty_le)}%)`],
-          ["NoChute", `${fInt(s.no_chute.so_luong)} (${fDec(s.no_chute.ty_le)}%)`], ["SortFailed", fInt(s.sort_failed)],
-          ["Biểu đồ tròn DMWCS", `Correct ${fDec(s.pie_correct_pct, 1)}% · Reject ${fDec(s.pie_reject_pct, 1)}%`],
-          ["File · model", esc(`${s.file} · ${s.model} / ${s.model_lan_2 ?? DASH}`)]])
-    + `<b>Máng NoChute</b><div class="chips" style="margin-top:6px">${s.no_chute_danh_sach.split("/").filter(Boolean).map(c => `<span>${esc(c)}</span>`).join("")}</div>`
-    + `<p class="note">Ô trên màn hình DMWCS bị cắt ở mép phải: danh sách chưa đầy đủ, máng cuối có thể thiếu chữ số.</p>`
-    + (warnList(s).length ? `<b>Cảnh báo</b><ul class="warns">${warnList(s).map(w => `<li>${esc(w)}</li>`).join("")}</ul>` : "")
-    + `</div></details>`);
-  const capByReport = new Map();
-  for (const c of RAW.capacity) (capByReport.get(c.report_id) || capByReport.set(c.report_id, { ...c, ngays: [] }).get(c.report_id)).ngays.push(c);
-  const capRefs = [...capByReport.values()].map(c => `<details><summary>Capacity ${dm(c.tu_ngay)} → ${dm(c.den_ngay)} ${warnBadge(c.canh_bao)}${editLink(c)}</summary><div>`
-    + kv([["Khoảng ngày truy vấn", esc(c.tu_ngay + " → " + c.den_ngay)], ["File · model", esc(`${c.file} · ${c.model} / ${c.model_lan_2 ?? DASH}`)],
-          ...c.ngays.map(p => [dm(p.ngay), fDec(p.cong_suat)])]) + `</div></details>`);
-  const bcrRefs = [...days].reverse().filter(d => BCR.has(d)).map(d => { const b = BCR.get(d);
-    return `<details><summary>${dm(d)} · Scanner (Hours&BcrRate) ${warnBadge(b.canh_bao)}${editLink(b)}</summary><div>`
-      + kv([["Thời gian", esc(b.thoi_gian_tu + " → " + b.thoi_gian_den)], ["File · model", esc(`${b.file} · ${b.model} / ${b.model_lan_2 ?? DASH}`)],
-            ...b.bcr.map(r => [`Scanner ${r.bcr_no}`, `${fDec(r.rate)}% · ${fInt(r.success)} / ${fInt(r.total)} (lỗi ${fInt(r.failed)})`])])
-      + (b.canh_bao.length ? `<b>Cảnh báo</b><ul class="warns">${b.canh_bao.map(w => `<li>${esc(w)}</li>`).join("")}</ul>` : "")
-      + `</div></details>`; });
-  $("h2-ref").innerHTML = [...sortedRefs, ...capRefs, ...bcrRefs].join("") || `<p class="hint">Không có dữ liệu.</p>`;
 }
 initRange("h2", [...SORTED.keys(), ...CAP.keys(), ...BCR.keys()], renderH2);
 renderH2();

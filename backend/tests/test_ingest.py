@@ -95,6 +95,24 @@ def test_api_dashboard_va_sua_tay(db):
     assert c.put(f"/api/reports/{rid}", json={**data, "total": "abc"}).status_code == 422
 
 
+def test_lich_su_tim_kiem(db):
+    c = TestClient(__import__("app.main", fromlist=["app"]).app)
+    moi = copy.deepcopy(rec("1.json"))
+    moi.update(file="Sorted_Moi.jpg", total=108958)
+    ingest(db, to_result(moi), source_name="Sorted_Moi.jpg")  # ghi đè bản sorted cũ trên dashboard
+    tim = c.get("/api/reports", params={"q": "sorted_moi"}).json()  # không phân biệt hoa thường, tìm chung 2 hệ thống
+    assert tim["total"] == 1 and tim["items"][0]["dang_dung"]
+    ht2 = c.get("/api/reports", params={"he": "ht2"}).json()["items"]
+    assert {i["loai"] for i in ht2} == {"dmwcs_sorted", "dmwcs_capacity", "dmwcs_bcr_rate"}
+    assert [i["dang_dung"] for i in ht2 if i["loai"] == "dmwcs_sorted"].count(False) == 1  # bản cũ bị thay
+    ht1 = c.get("/api/reports", params={"he": "ht1", "from": "2026-11-01", "to": "2026-11-30"}).json()["items"]
+    assert ht1 and all(i["loai"] == "scada" and i["day_chuyen"] for i in ht1)
+    assert c.get("/api/reports", params={"q": "%"}).json()["total"] == 0  # ký tự đặc biệt của LIKE không bị hiểu là "mọi thứ"
+    assert c.get("/api/reports", params={"he": "ht9"}).status_code == 400
+    d = c.get(f"/api/reports/{ht1[0]['id']}").json()
+    assert d["bat_thuong"] and all(p["loai_key"] != "UNKNOWN" for p in d["bat_thuong"])
+
+
 def test_retention_35_ngay(db):
     from datetime import timedelta
 

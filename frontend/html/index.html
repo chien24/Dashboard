@@ -6,7 +6,7 @@
 <title>Dashboard CNKT3</title>
 <link rel="icon" type="image/png" href="../img/favicon.png">
 <script>try { const t = localStorage.getItem("theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
-<link rel="stylesheet" href="../css/base.css?v=2">
+<link rel="stylesheet" href="../css/base.css?v=5">
 <link rel="stylesheet" href="../css/dashboard.css?v=2">
 </head>
 <body>
@@ -14,7 +14,7 @@
   <span class="brand">OCR Dashboard CNKT3</span>
   <button class="theme-btn" id="theme-btn" type="button"></button></header>
 <nav class="topnav">
-  <a href="index.html" aria-current="page">Dashboard</a><a href="upload.html">Upload ảnh</a></nav>
+  <a href="index.html" aria-current="page">Dashboard</a><a href="upload.html">Upload ảnh</a><a href="history.html">Lịch sử</a></nav>
 <main>
   <h1>Dashboard vận hành CNKT3</h1>
   <p class="sub">Phòng Kỹ thuật · Chi nhánh Khai thác 3 · HT1 SCADA và HT2 DMWCS</p>
@@ -52,8 +52,7 @@
       <div class="tbl-wrap"><table id="h1-table"></table></div>
       <p class="note">Thời gian sử dụng = ALL / Công suất MAX: ước tính, thời gian thực tế ≥ giá trị này (chờ xác nhận Q6).</p>
     </div>
-    <h2 style="margin-top:20px">Thông tin tham khảo</h2>
-    <div id="h1-ref"></div>
+    <p class="note">Chi tiết từng báo cáo (giá trị gốc, cảnh báo, ảnh đã upload) xem ở trang <a href="history.html">Lịch sử</a>.</p>
   </section>
 
   <!-- ===================== HT2 ===================== -->
@@ -78,13 +77,12 @@
       <div class="tbl-wrap"><table id="h2-table"></table></div>
       <p class="note">CORRECT = CorrectChute + PDA, nên CORRECT + REJECT = ALL. Cột PDA là phần PDA nằm trong CORRECT.</p>
     </div>
-    <h2 style="margin-top:20px">Thông tin tham khảo</h2>
-    <div id="h2-ref"></div>
+    <p class="note">Chi tiết từng báo cáo (giá trị gốc, cảnh báo, ảnh đã upload) xem ở trang <a href="history.html#ht2">Lịch sử</a>.</p>
   </section>
 </main>
 <div id="tip"></div>
 
-<script src="../js/api.js?v=2"></script>
-<script src="../js/dashboard.js?v=2"></script>
+<script src="../js/api.js?v=3"></script>
+<script src="../js/dashboard.js?v=3"></script>
 </body>
 </html>

@@ -6,7 +6,7 @@
 <title>Upload ảnh OCR</title>
 <link rel="icon" type="image/png" href="../img/favicon.png">
 <script>try { const t = localStorage.getItem("theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
-<link rel="stylesheet" href="../css/base.css?v=2">
+<link rel="stylesheet" href="../css/base.css?v=5">
 <link rel="stylesheet" href="../css/upload.css?v=3">
 </head>
 <body>
@@ -14,7 +14,7 @@
   <span class="brand">OCR Dashboard CNKT3</span>
   <button class="theme-btn" id="theme-btn" type="button"></button></header>
 <nav class="topnav">
-  <a href="index.html">Dashboard</a><a href="upload.html" aria-current="page">Upload ảnh</a></nav>
+  <a href="index.html">Dashboard</a><a href="upload.html" aria-current="page">Upload ảnh</a><a href="history.html">Lịch sử</a></nav>
 <main>
   <h1>Upload ảnh chụp màn hình</h1>
   <p class="sub">SCADA hoặc DMWCS (Sorted, Capacity, BCR rate). Ảnh JPG / PNG, nhiều ảnh một lần. OCR chạy lần lượt từng ảnh.</p>
@@ -39,7 +39,7 @@
   <div id="items"></div>
 </main>
 <div id="toasts" aria-live="polite"></div>
-<script src="../js/api.js?v=2"></script>
+<script src="../js/api.js?v=3"></script>
 <script src="../js/upload.js?v=3"></script>
 </body>
 </html>

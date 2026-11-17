@@ -1,0 +1,30 @@
+/* Trang Lịch sử: thanh tìm kiếm, danh sách report theo ngày, chi tiết khi mở. */
+.search-bar { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; margin: 16px 0 14px; padding: 14px 16px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); }
+.search-bar label { display: grid; gap: 4px; font-size: 12px; color: var(--ink-2); }
+.search-bar .search { flex: 1 1 280px; }
+.search input { width: 100%; padding-left: 34px;
+  background: var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237d8494' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E") 10px center / 16px no-repeat; }
+.tabs .count { margin-left: 4px; padding: 0 7px; border-radius: 10px; font-size: 12px; font-weight: 500; background: var(--wash); color: var(--ink-2); }
+.tabs .count:empty { display: none; }
+
+.hist .day { margin: 18px 0 6px; font-size: 13px; font-weight: 600; color: var(--ink-2); }
+.hist .day:first-child { margin-top: 4px; }
+.hist summary { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; list-style: none; }
+.hist summary::-webkit-details-marker { display: none; }
+.hist summary::before { content: "▸"; color: var(--muted); width: 10px; }
+.hist details[open] > summary::before { content: "▾"; }
+.hist .file { color: var(--ink-2); overflow-wrap: anywhere; }
+.hist .meta { margin-left: auto; font-size: 12px; color: var(--muted); font-weight: 400; }
+.hist mark { background: color-mix(in srgb, var(--warn) 45%, transparent); color: inherit; border-radius: 2px; padding: 0 1px; }
+.badge.old { color: var(--muted); }
+.hist .body { display: grid; grid-template-columns: minmax(0, 240px) minmax(0, 1fr); gap: 18px; }
+@media (max-width: 760px) { .hist .body { grid-template-columns: 1fr; } .hist .meta { margin-left: 0; } }
+.hist .side { display: grid; gap: 10px; align-content: start; min-width: 0; }
+.hist .kv { grid-template-columns: max-content minmax(0, 1fr); }
+.hist .kv span { overflow-wrap: anywhere; }
+.hist .side .btn { text-align: center; text-decoration: none; }
+.thumb { display: block; width: 100%; max-height: 200px; object-fit: cover; object-position: top left; border-radius: 8px; border: 1px solid var(--border); }
+.no-img { padding: 24px 8px; text-align: center; font-size: 12px; color: var(--muted); border: 1px dashed var(--axis); border-radius: 8px; }
+.empty { padding: 28px 16px; text-align: center; color: var(--ink-2); background: var(--surface); border: 1px dashed var(--axis); border-radius: 12px; }
+.more { display: block; margin: 14px auto 0; }

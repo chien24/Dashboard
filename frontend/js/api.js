@@ -55,7 +55,44 @@ function syncThemeBtn() {
   b.setAttribute("aria-label", label);
   b.title = label;
 }
+// Footer dùng chung cho mọi trang (chèn bằng JS để không phải chép HTML vào từng trang).
+const MAP_URL = "https://maps.app.goo.gl/Rrd8YQa3xhNANA6b9";
+const SUPPORT_EMAIL = "chiencodedao@gmail.com";
+const ICON = {
+  pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg>',
+  mail: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>',
+  user: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>',
+  up: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg>',
+};
+const FOOTER = `<footer class="site-foot">
+  <div class="foot-in">
+    <div class="foot-brand">
+      <img src="../img/logo_viettel_post.webp" alt="Viettel Post" width="93" height="36">
+      <p class="foot-name">Viettel Post CNKT 3</p>
+      <p class="foot-sub">Phòng Kỹ thuật · Chi nhánh Khai thác 3</p>
+      <a class="foot-line" href="${MAP_URL}" target="_blank" rel="noopener">${ICON.pin}<span>Xem địa chỉ trên Google Maps</span></a>
+    </div>
+    <div class="foot-col">
+      <h4>Bạn cần hỗ trợ?</h4>
+      <p class="foot-line">${ICON.user}<span>Liên hệ anh Khoa · Phòng Kỹ thuật</span></p>
+      <p class="foot-hint">Liên hệ nếu cần giúp đỡ về hệ thống:</p>
+      <a class="foot-line" href="mailto:${SUPPORT_EMAIL}">${ICON.mail}<span>${SUPPORT_EMAIL}</span></a>
+    </div>
+    <div class="foot-col">
+      <h4>Điều hướng</h4>
+      <a href="index.html">Dashboard</a><a href="upload.html">Upload ảnh</a><a href="history.html">Lịch sử</a>
+    </div>
+  </div>
+  <div class="foot-bottom">
+    <span>© ${new Date().getFullYear()} Viettel Post CNKT 3 · Phòng Kỹ thuật · OCR Dashboard</span>
+    <button class="to-top" id="to-top" type="button" aria-label="Lên đầu trang" title="Lên đầu trang">${ICON.up}</button>
+  </div>
+</footer>`;
+
 document.addEventListener("DOMContentLoaded", () => {
+  document.body.insertAdjacentHTML("beforeend", FOOTER);
+  document.getElementById("to-top").addEventListener("click", () =>
+    scrollTo({ top: 0, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }));
   document.getElementById("theme-btn")?.addEventListener("click", () => {
     const t = isDark() ? "light" : "dark";
     document.documentElement.dataset.theme = t;
