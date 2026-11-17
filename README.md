@@ -49,6 +49,17 @@ uvicorn app.main:app --reload
 
 Dữ liệu nằm trong `backend/data/` (`ocr.db` và `uploads/`). Xóa thư mục này là về trạng thái trống.
 
+### Mở cho người khác dùng qua link Vercel
+
+Frontend nằm trên Vercel (https://dashboard-frontend-silk-zeta.vercel.app). Vercel chuyển `/api/*` và `/uploads/*` về backend chạy trên máy này qua Cloudflare Quick Tunnel; dữ liệu và API key vẫn ở máy local.
+
+```powershell
+# một lần: winget install --id Cloudflare.cloudflared
+powershell -ExecutionPolicy Bypass -File backend\scripts\start_public.ps1   # chạy từ thư mục gốc repo
+```
+
+Script chạy backend (cổng 8000) + tunnel, ghi link `*.trycloudflare.com` mới vào `frontend/vercel.json`, commit và push **riêng file đó** để Vercel deploy lại (~1 phút). Giữ cửa sổ mở; **Ctrl+C** tắt cả hai. Máy tắt hoặc script dừng thì link Vercel không dùng được. Không chạy song song với `uvicorn` khác ở cổng 8000.
+
 ## 4. Import dữ liệu JSON cũ
 
 ```powershell
