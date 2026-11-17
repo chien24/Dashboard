@@ -213,7 +213,7 @@ function rangeDays(prefix) {
 }
 
 // ---------------------------------------------------------------- HT1
-$("h1-line").innerHTML = `<option value="all">Tất cả</option>` + LINES.map(l => `<option value="${l.key}">${esc(l.ten)}</option>`).join("");
+$("h1-line").innerHTML = `<option value="all">Tất cả</option>` + LINES.map(l => `<option value="${esc(l.key)}">${esc(l.ten)}</option>`).join("");
 function renderH1() {
   const days = rangeDays("h1"), sel = $("h1-line").value;
   const inSel = x => sel === "all" || x.line.key === sel;
@@ -317,4 +317,6 @@ initRange("h2", [...SORTED.keys(), ...CAP.keys(), ...BCR.keys()], renderH2);
 renderH2();
 if (location.hash === "#ht2") document.querySelector('[data-tab="ht2"]').click(); // mở thẳng tab HT2
 let rz; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { renderH1(); renderH2(); }, 150); });
-})().catch(e => { document.querySelector("main").insertAdjacentHTML("afterbegin", `<p class="err">Không tải được dữ liệu: ${e.message}</p>`); });
+})().catch(e => {
+  document.querySelector("main").prepend(Object.assign(document.createElement("p"), { className: "err", textContent: "Không tải được dữ liệu: " + e.message }));
+});

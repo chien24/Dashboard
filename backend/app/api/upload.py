@@ -4,6 +4,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 
 from app import config
 from app.db import get_db
@@ -45,20 +46,27 @@ async def upload(files: list[UploadFile] = File(...), loai: str | None = Form(No
     if loai and loai not in LOAI:
         raise HTTPException(400, f"loai phải là một trong {LOAI}")
     out = []
+    limit = config.MAX_UPLOAD_MB * 1024 * 1024
+
+    def duplicate(name, up):
+        rep = db.scalar(select(Report).where(Report.upload_id == up.id).order_by(Report.id.desc()))
+        job = db.scalar(select(Job).where(Job.upload_id == up.id).order_by(Job.id.desc()))
+        return {"file": name, "upload_id": up.id, "duplicate": True,
+                "job_id": job.id if job else None, "report_id": rep.id if rep else None}
+
     for f in files:
         ext = Path(f.filename or "").suffix.lower()
         if ext not in EXT:
             raise HTTPException(400, f"Chỉ nhận ảnh {', '.join(EXT)}: {f.filename}")
+        if (f.size or 0) > limit:  # chặn trước khi đọc cả file vào RAM
+            raise HTTPException(413, f"{f.filename} lớn hơn {config.MAX_UPLOAD_MB} MB")
         body = await f.read()
-        if len(body) > config.MAX_UPLOAD_MB * 1024 * 1024:
+        if len(body) > limit:
             raise HTTPException(413, f"{f.filename} lớn hơn {config.MAX_UPLOAD_MB} MB")
         sha = hashlib.sha256(body).hexdigest()
         up = db.scalar(select(Upload).where(Upload.sha256 == sha))
         if up and not force:
-            rep = db.scalar(select(Report).where(Report.upload_id == up.id).order_by(Report.id.desc()))
-            job = db.scalar(select(Job).where(Job.upload_id == up.id).order_by(Job.id.desc()))
-            out.append({"file": f.filename, "upload_id": up.id, "duplicate": True,
-                        "job_id": job.id if job else None, "report_id": rep.id if rep else None})
+            out.append(duplicate(f.filename, up))
             continue
         if not up:
             d = config.UPLOAD_DIR / now().strftime("%Y/%m/%d")
@@ -73,7 +81,12 @@ async def upload(files: list[UploadFile] = File(...), loai: str | None = Form(No
             up = Upload(original_name=f.filename, stored_path=str(path), sha256=sha, mime=EXT[ext],
                         size_bytes=len(body), width=w, height=h)
             db.add(up)
-            db.commit()
+            try:
+                db.commit()
+            except IntegrityError:  # request khác vừa ghi cùng ảnh (sha256 unique): coi như ảnh trùng, giữ file (cùng tên, cùng nội dung)
+                db.rollback()
+                out.append(duplicate(f.filename, db.scalar(select(Upload).where(Upload.sha256 == sha))))
+                continue
         job = new_job(db, up.id, loai)
         out.append({"file": f.filename, "upload_id": up.id, "duplicate": False, "job_id": job.id, "report_id": None})
     return out

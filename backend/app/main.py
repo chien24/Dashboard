@@ -46,6 +46,16 @@ app = FastAPI(title="OCR Dashboard CNKT3", lifespan=lifespan)
 for r in (upload.router, reports.router, dashboard.router, system.router):
     app.include_router(r)
 
+
+@app.middleware("http")
+async def security_headers(request, call_next):
+    """nosniff: trình duyệt không đoán lại kiểu file (ảnh upload không bị chạy như HTML); DENY: trang không bị nhúng vào iframe lạ."""
+    resp = await call_next(request)
+    resp.headers.setdefault("X-Content-Type-Options", "nosniff")
+    resp.headers.setdefault("X-Frame-Options", "DENY")
+    resp.headers.setdefault("Referrer-Policy", "same-origin")
+    return resp
+
 config.UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=config.UPLOAD_DIR), name="uploads")
 

@@ -7,6 +7,6 @@ apscheduler>=3,<4
 python-dotenv
 google-genai
 openai
-pillow
+pillow>=13.0
 pytest
 httpx

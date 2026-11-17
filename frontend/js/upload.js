@@ -95,6 +95,7 @@ async function send(it, force = false) {
   setState(it, "Đang gửi ảnh…");
   try {
     const [r] = await api.upload([it.file], loai, force);
+    if (r.duplicate && !r.report_id && r.job_id) return poll(it, r.job_id);  // ảnh trùng còn đang OCR dở: theo dõi luôn job đó
     if (r.duplicate) {
       finish(it, "warn", `Ảnh đã được xử lý trước đó${r.report_id ? ` · <a href="report.html?id=${r.report_id}">xem kết quả cũ</a>` : ""}
         · <button class="btn" data-again>OCR lại</button>`, `<b>${escHtml(it.file.name)}</b><br>Ảnh này đã OCR trước đó, đang hiện kết quả cũ.`);
