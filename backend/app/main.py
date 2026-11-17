@@ -55,4 +55,13 @@ def home():
     return RedirectResponse("/html/index.html")
 
 
-app.mount("/", StaticFiles(directory=FRONTEND), name="frontend")  # mount cuối để không che /api
+class FrontendFiles(StaticFiles):
+    """no-cache: trình duyệt luôn hỏi lại server (file không đổi thì chỉ nhận 304), nên sửa HTML/CSS/JS là thấy ngay."""
+
+    def file_response(self, *args, **kwargs):
+        resp = super().file_response(*args, **kwargs)
+        resp.headers["Cache-Control"] = "no-cache"
+        return resp
+
+
+app.mount("/", FrontendFiles(directory=FRONTEND), name="frontend")  # mount cuối để không che /api

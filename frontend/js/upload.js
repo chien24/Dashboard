@@ -13,7 +13,9 @@ function addFiles(files) {
     it.el.className = "item";
     it.el.innerHTML = `<img src="${it.url}" alt="">
       <div><div class="item-head"><span class="name">${escHtml(file.name)}</span>
-        <select class="loai">${LOAI_OPTS}</select><span class="state">Chưa gửi</span></div></div>
+        <select class="loai">${LOAI_OPTS}</select>
+        <div class="progress" hidden role="progressbar" aria-label="Tiến trình OCR" aria-valuemin="0" aria-valuemax="100"><div class="bar"></div></div>
+        <span class="state">Chưa gửi</span><span class="elapsed hint"></span></div></div>
       <div class="result"></div>`;
     items.push(it);
     $id("items").append(it.el);
@@ -34,35 +36,101 @@ function setState(it, text, cls = "") {
   s.innerHTML = text;
 }
 
+/** Thanh tiến trình. kind: busy (đang chạy, có sọc chạy) | done | warn | failed. */
+function setProgress(it, pct, kind) {
+  const p = it.el.querySelector(".progress");
+  p.hidden = false;
+  p.className = "progress " + kind;
+  p.setAttribute("aria-valuenow", pct);
+  p.querySelector(".bar").style.width = pct + "%";
+}
+
+/** % ước lượng từ bước backend báo về: nhận diện loại -> OCR lần 1..N -> ghi DB. */
+function pctOf(job) {
+  if (job.status === "pending") return 5;
+  const m = (job.progress || "").match(/lần (\d+)\/(\d+)/);
+  if (m) return Math.round(25 + 60 * (m[1] - 1) / m[2] + 10);
+  return /nhận diện/.test(job.progress || "") ? 15 : 10;
+}
+
+function tickElapsed(it) {
+  const s = Math.round((Date.now() - it.t0) / 1000);
+  it.el.querySelector(".elapsed").textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+}
+
+/** Bỏ tên exception ở đầu lỗi backend ("ValueError: ...") cho dễ đọc. */
+const niceError = e => String(e || "Lỗi không rõ").replace(/^[A-Za-z]+(Error|Failed|Exception)?: /, "");
+
+/** Thông báo nổi góc phải dưới. kind: ok | warn | fail. Lỗi giữ tới khi đóng, còn lại tự ẩn sau 8s. */
+function toast(kind, html) {
+  const box = $id("toasts");
+  const t = document.createElement("div");
+  t.className = "toast " + kind;
+  t.setAttribute("role", kind === "fail" ? "alert" : "status");
+  t.innerHTML = `<div>${html}</div><button type="button" aria-label="Đóng thông báo">×</button>`;
+  t.querySelector("button").onclick = () => t.remove();
+  box.append(t);
+  while (box.children.length > 4) box.firstElementChild.remove();
+  if (kind !== "fail") setTimeout(() => t.remove(), 8000);
+}
+
+function finish(it, kind, stateHtml, toastHtml) {
+  clearInterval(it.timer);
+  tickElapsed(it);
+  setProgress(it, 100, kind === "fail" ? "failed" : kind === "warn" ? "warn" : "done");
+  setState(it, stateHtml, kind === "fail" ? "failed" : kind === "warn" ? "dup" : "done");
+  toast(kind, toastHtml);
+}
+
 async function send(it, force = false) {
   const sel = it.el.querySelector(".loai").value;
   const loai = sel === "*" ? $id("loai-all").value : sel;
   it.sent = true;
-  setState(it, "Đang gửi…");
+  it.el.querySelector(".loai").disabled = true;
+  it.t0 = Date.now();
+  clearInterval(it.timer);
+  it.timer = setInterval(() => tickElapsed(it), 1000);
+  it.el.querySelector(".result").innerHTML = "";
+  setProgress(it, 3, "busy");
+  setState(it, "Đang gửi ảnh…");
   try {
     const [r] = await api.upload([it.file], loai, force);
     if (r.duplicate) {
-      setState(it, `Ảnh đã được xử lý trước đó${r.report_id ? ` · <a href="report.html?id=${r.report_id}">xem kết quả cũ</a>` : ""}
-        · <button class="btn" data-again>OCR lại</button>`, "dup");
+      finish(it, "warn", `Ảnh đã được xử lý trước đó${r.report_id ? ` · <a href="report.html?id=${r.report_id}">xem kết quả cũ</a>` : ""}
+        · <button class="btn" data-again>OCR lại</button>`, `<b>${escHtml(it.file.name)}</b><br>Ảnh này đã OCR trước đó, đang hiện kết quả cũ.`);
       it.el.querySelector("[data-again]").onclick = () => send(it, true);
       if (r.report_id) showReport(it, r.report_id);
       return;
     }
     poll(it, r.job_id);
   } catch (e) {
-    setState(it, "Lỗi: " + escHtml(e.message), "failed");
+    failed(it, e.message);
   }
 }
 
+function failed(it, err) {
+  const msg = escHtml(niceError(err));
+  finish(it, "fail", "✕ Thất bại", `<b>OCR thất bại: ${escHtml(it.file.name)}</b><br>${msg}`);
+  it.el.querySelector(".result").innerHTML = `<div class="err-box"><b>Không đọc được ảnh này.</b> ${msg}
+    <br><button class="btn" data-retry>Thử lại</button> <span class="hint">Có thể chọn đúng loại ảnh ở ô bên cạnh tên file rồi thử lại.</span></div>`;
+  it.el.querySelector(".loai").disabled = false;
+  it.el.querySelector("[data-retry]").onclick = () => send(it, true);
+}
+
 async function poll(it, jobId) {
-  const job = await api.job(jobId).catch(e => ({ status: "failed", error: e.message }));
-  if (job.status === "pending") setState(it, "Đang chờ");
-  else if (job.status === "running") setState(it, "Đang OCR · " + escHtml(job.progress || ""));
-  if (job.status === "pending" || job.status === "running") return setTimeout(() => poll(it, jobId), 2000);
-  if (job.status === "failed") return setState(it, "Lỗi: " + escHtml(job.error), "failed");
-  setState(it, `Xong · ${escHtml(job.progress || "")} · <a href="report.html?id=${job.report_id}">Xem / Sửa</a>`, "done");
-  showReport(it, job.report_id);
-  renderProviders();
+  const job = await api.job(jobId).catch(e => ({ status: "failed", error: "Mất kết nối tới server: " + e.message }));
+  if (job.status === "pending" || job.status === "running") {
+    setProgress(it, pctOf(job), "busy");
+    setState(it, job.status === "pending" ? "Đang chờ tới lượt" : "Đang OCR · " + escHtml(job.progress || ""));
+    return setTimeout(() => poll(it, jobId), 2000);
+  }
+  if (job.status === "failed") return failed(it, job.error);
+  const r = await showReport(it, job.report_id).catch(() => null);
+  const link = `<a href="report.html?id=${job.report_id}">Xem / Sửa</a>`;
+  if (r && r.status === "can_kiem_tra")
+    finish(it, "warn", `✓ Xong, cần kiểm tra · ${link}`,
+      `<b>${escHtml(it.file.name)}</b><br>OCR xong nhưng có ${r.canh_bao.length} cảnh báo, nên kiểm tra lại số liệu. ${link}`);
+  else finish(it, "ok", `✓ Thành công · ${link}`, `<b>${escHtml(it.file.name)}</b><br>OCR thành công (${escHtml(LOAI_TEN[r?.loai] || r?.loai || "")}). ${link}`);
 }
 
 /** Bảng kết quả: cảnh báo tô vàng, trường lệch giữa 2 lần OCR tô đỏ. */
@@ -78,6 +146,7 @@ async function showReport(it, id) {
     + (r.canh_bao.length ? `<div class="warn-box"><b>Cảnh báo</b><ul>${r.canh_bao.map(c => `<li>${escHtml(c)}</li>`).join("")}</ul></div>` : "")
     + `<details><summary>Dữ liệu đọc được (${lech.size} trường lệch)</summary><div class="tbl-wrap"><table>${rows}</table></div></details>`;
   if (lech.size) it.el.querySelector(".result details").open = true;
+  return r;
 }
 
 function flatten(v, p = "", out = {}) {

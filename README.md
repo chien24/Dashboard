@@ -117,7 +117,7 @@ Thứ tự: **Gemini → NVIDIA NIM → OpenRouter**, mỗi provider có danh s�
 | `ModelNotFound` | 404, model bị gỡ | Đổi model, model `disabled` |
 | `BadOutput` | JSON hỏng, sai schema | Thử lại 1 lần cùng model, vẫn sai thì đổi model |
 
-Trạng thái lưu ở bảng `model_status`, xem tại `GET /api/system/providers` (thanh trên cùng của mỗi trang), gỡ bằng `POST /api/system/providers/reset`.
+Trạng thái lưu ở bảng `model_status`, xem tại `GET /api/system/providers` (hoặc Swagger `/docs`), gỡ bằng `POST /api/system/providers/reset`.
 
 **Status của report:** `ok` · `can_kiem_tra` (2 lần đọc lệch hoặc sai số học, chi tiết trong `canh_bao`; trang upload tô vàng cảnh báo, tô đỏ trường lệch) · `da_sua_tay` (đã sửa ở `report.html`).
 
@@ -152,7 +152,7 @@ Sửa `backend/app/ocr/abnormal_types.json`: mỗi `loai_key` có `vi` (tên hi�
 
 | Hiện tượng | Cách xử lý |
 |---|---|
-| 429 / hết quota | Router tự đổi model/provider. Xem thanh trạng thái; model "tạm nghỉ" tự hết cooldown. Hết cả chuỗi thì đợi hoặc thêm key provider khác |
+| 429 / hết quota | Router tự đổi model/provider. Xem `GET /api/system/providers`; model "tạm nghỉ" tự hết cooldown. Hết cả chuỗi thì đợi hoặc thêm key provider khác |
 | Key sai / hết hạn / hết credit | Provider bị "tắt" (`disabled`). Sửa key trong `.env`, khởi động lại app (hoặc `POST /api/system/providers/reset`) |
 | Model bị gỡ khỏi free tier (404) | Model bị tắt. Đổi danh sách model trong `.env` (`NVIDIA_MODELS=...`) |
 | Ảnh quá lớn | Giới hạn upload `MAX_UPLOAD_MB` (mặc định 10). Với NVIDIA/OpenRouter, ảnh bị chê quá lớn sẽ tự nén JPEG ≤ 2048px rồi gửi lại |
