@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Upload ảnh OCR</title>
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/upload.css">
+</head>
+<body>
+<nav class="topnav"><span class="brand">OCR Dashboard CNKT3</span>
+  <a href="index.html">Dashboard</a><a href="upload.html" aria-current="page">Upload ảnh</a>
+  <span class="providers" id="providers"></span></nav>
+<main>
+  <h1>Upload ảnh chụp màn hình</h1>
+  <p class="sub">SCADA hoặc DMWCS (Sorted, Capacity, BCR rate). Ảnh JPG / PNG, nhiều ảnh một lần. OCR chạy lần lượt từng ảnh.</p>
+
+  <label class="drop" id="drop">
+    <input type="file" id="pick" accept=".jpg,.jpeg,.png,.webp" multiple hidden>
+    <b>Kéo thả ảnh vào đây</b> hoặc bấm để chọn
+  </label>
+
+  <div class="filters">
+    <label>Loại cho tất cả ảnh
+      <select id="loai-all">
+        <option value="">Tự nhận diện</option>
+        <option value="scada">SCADA</option><option value="dmwcs_sorted">DMWCS Sorted</option>
+        <option value="dmwcs_capacity">DMWCS Capacity</option><option value="dmwcs_bcr_rate">DMWCS BCR rate</option>
+      </select></label>
+    <button class="btn primary" id="start" disabled>Bắt đầu OCR</button>
+    <button class="btn" id="clear">Xóa danh sách</button>
+    <span class="hint">"Tự nhận diện" tốn thêm 1 lần gọi API mỗi ảnh.</span>
+  </div>
+
+  <div id="items"></div>
+</main>
+<script src="../js/api.js"></script>
+<script src="../js/upload.js"></script>
+</body>
+</html>

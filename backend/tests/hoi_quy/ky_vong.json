@@ -1,0 +1,57 @@
+{
+  "_ghi_chu": "Số liệu đối chiếu tay với ảnh gốc (data_dictionary.md, 2026-11-13). Khóa: <loai>/<file>. phan_bo_bat_thuong: [so_luong, ty_le] theo thứ tự từ trên xuống. no_chute_danh_sach_bat_dau: ô bị cắt ở mép phải nên chỉ so phần đầu.",
+  "scada/1.jpg": {
+    "anh": "sample_dashboar/HT1/1.jpg",
+    "thoi_gian_tu": "2026-11-03 00:00", "thoi_gian_den": "2026-11-03 23:59", "day_chuyen": "Outbound",
+    "so_luong_da_quet": 75469, "so_luong_goi_theo_luoi": 72732, "so_buu_kien_bat_thuong": 5330,
+    "ty_le_bat_thuong": 7.33, "thoi_gian_quet_trung_binh": 1.0376, "cong_suat_cao_nhat_1h": 7207,
+    "cong_suat_max_tu": "2026-11-03 21:22:00", "cong_suat_max_den": "2026-11-03 22:21:00",
+    "phan_bo_bat_thuong": [[26, 0.49], [2501, 46.92], [1716, 32.20], [1368, 25.67]]
+  },
+  "scada/3.jpg": {
+    "anh": "sample_dashboar/HT1/3.jpg",
+    "thoi_gian_tu": "2026-11-03 00:00", "thoi_gian_den": "2026-11-03 23:59", "day_chuyen": "CBS1 2st layer",
+    "so_luong_da_quet": 78023, "so_luong_goi_theo_luoi": 77911, "so_buu_kien_bat_thuong": 2133,
+    "ty_le_bat_thuong": 2.74, "thoi_gian_quet_trung_binh": 1.0014, "cong_suat_cao_nhat_1h": 7799,
+    "cong_suat_max_tu": "2026-11-03 20:02:00", "cong_suat_max_den": "2026-11-03 21:01:00",
+    "phan_bo_bat_thuong": [[252, 11.81], [2, 0.09], [1040, 48.76], [1, 0.05], [896, 42.01]]
+  },
+  "scada/4.jpg": {
+    "anh": "sample_dashboar/HT1/4.jpg",
+    "thoi_gian_tu": "2026-11-03 00:00", "thoi_gian_den": "2026-11-03 23:59", "day_chuyen": "CBS2 1st layer",
+    "so_luong_da_quet": 27648, "so_luong_goi_theo_luoi": 27568, "so_buu_kien_bat_thuong": 1115,
+    "ty_le_bat_thuong": 4.04, "thoi_gian_quet_trung_binh": 1.0029, "cong_suat_cao_nhat_1h": 6356,
+    "cong_suat_max_tu": "2026-11-03 00:25:00", "cong_suat_max_den": "2026-11-03 01:24:00",
+    "phan_bo_bat_thuong": [[30, 2.69], [664, 59.55], [111, 9.96], [350, 31.39]]
+  },
+  "scada/5.jpg": {
+    "anh": "sample_dashboar/HT1/5.jpg",
+    "thoi_gian_tu": "2026-11-03 00:00", "thoi_gian_den": "2026-11-03 23:59", "day_chuyen": "Inbound",
+    "so_luong_da_quet": 90949, "so_luong_goi_theo_luoi": 77927, "so_buu_kien_bat_thuong": 5767,
+    "ty_le_bat_thuong": 7.40, "thoi_gian_quet_trung_binh": 1.1671, "cong_suat_cao_nhat_1h": 8674,
+    "cong_suat_max_tu": "2026-11-03 21:19:00", "cong_suat_max_den": "2026-11-03 22:18:00",
+    "phan_bo_bat_thuong": [[3, 0.05], [18, 0.31], [2485, 43.09], [3678, 63.78]]
+  },
+  "dmwcs_sorted/1.jpg": {
+    "anh": "sample_dashboar/HT2/sorted/1.jpg",
+    "thoi_gian_tu": "2026-11-09 00:00:00", "thoi_gian_den": "2026-11-10 00:00:00",
+    "total": 108957, "correct_chute": 81121, "pda": 15758, "reject_chute": 12078,
+    "no_read": {"so_luong": 10053, "ty_le": 83.23},
+    "no_post_office": {"so_luong": 1760, "ty_le": 14.57},
+    "no_chute": {"so_luong": 265, "ty_le": 2.19},
+    "no_chute_danh_sach_bat_dau": "109/111/137/139/149/151",
+    "sort_failed": 716, "pie_correct_pct": 88.9, "pie_reject_pct": 11.1
+  },
+  "dmwcs_bcr_rate/3.jpg": {
+    "anh": "sample_dashboar/HT2/bcr_rate/3.jpg",
+    "thoi_gian_tu": "2026-11-15 00:00:00", "thoi_gian_den": "2026-11-16 00:00:00",
+    "bcr": [[1, 77079, 68753, 8326, 89.20], [2, 18109, 16098, 2011, 88.90], [3, 11159, 11159, 0, 100.00],
+            [5, 6202, 5466, 736, 88.13], [6, 3795, 2973, 822, 78.34]]
+  },
+  "dmwcs_capacity/2.jpg": {
+    "anh": "sample_dashboar/HT2/capacity/2.jpg",
+    "tu_ngay": "2026-11-05", "den_ngay": "2026-11-10",
+    "cong_suat_theo_ngay": [["2026-11-05", 5987.75], ["2026-11-06", 5845.84], ["2026-11-07", 6061.54],
+                            ["2026-11-08", 4771.71], ["2026-11-09", 5889.57], ["2026-11-10", 6720.78]]
+  }
+}

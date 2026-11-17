@@ -1,0 +1,179 @@
+[
+  {
+    "file": "1.jpg",
+    "loai": "scada",
+    "model": "gemini-3.6-flash",
+    "model_lan_2": "gemini-3.6-flash",
+    "canh_bao": [
+      "OCR lần 2: Lỗi font hiển thị ký tự '?' trong tên loại bất thường.",
+      "OCR lần 2: Tổng tỷ lệ phần trăm trong chú thích bất thường vượt quá 100% (105.28%)."
+    ],
+    "thoi_gian_tu": "2026-11-03 00:00",
+    "thoi_gian_den": "2026-11-03 23:59",
+    "day_chuyen": "Outbound",
+    "so_luong_da_quet": 75469,
+    "so_luong_goi_theo_luoi": 72732,
+    "so_buu_kien_bat_thuong": 5330,
+    "ty_le_bat_thuong": 7.33,
+    "thoi_gian_quet_trung_binh": 1.0376,
+    "cong_suat_cao_nhat_1h": 7207,
+    "cong_suat_max_tu": "2026-11-03 21:22:00",
+    "cong_suat_max_den": "2026-11-03 22:21:00",
+    "phan_bo_bat_thuong": [
+      {
+        "loai": "Không có Báo cáo Phân lo?i",
+        "so_luong": 26,
+        "ty_le": 0.49
+      },
+      {
+        "loai": "物理设备异常",
+        "so_luong": 2501,
+        "ty_le": 46.92
+      },
+      {
+        "loai": "Yêu c?u ?ng d?n th?t b?i",
+        "so_luong": 1716,
+        "ty_le": 32.2
+      },
+      {
+        "loai": "Không Có Mã Vạch",
+        "so_luong": 1368,
+        "ty_le": 25.67
+      }
+    ]
+  },
+  {
+    "file": "3.jpg",
+    "loai": "scada",
+    "model": "gemini-3.6-flash",
+    "model_lan_2": "gemini-3.6-flash",
+    "canh_bao": [
+      "OCR lần 1: Một số tên loại bất thường hiển thị ký tự '?' do lỗi font trên giao diện."
+    ],
+    "thoi_gian_tu": "2026-11-03 00:00",
+    "thoi_gian_den": "2026-11-03 23:59",
+    "day_chuyen": "CBS1 2st layer",
+    "so_luong_da_quet": 78023,
+    "so_luong_goi_theo_luoi": 77911,
+    "so_buu_kien_bat_thuong": 2133,
+    "ty_le_bat_thuong": 2.74,
+    "thoi_gian_quet_trung_binh": 1.0014,
+    "cong_suat_cao_nhat_1h": 7799,
+    "cong_suat_max_tu": "2026-11-03 20:02:00",
+    "cong_suat_max_den": "2026-11-03 21:01:00",
+    "phan_bo_bat_thuong": [
+      {
+        "loai": "Không có Báo cáo Phân lo?i",
+        "so_luong": 252,
+        "ty_le": 11.81
+      },
+      {
+        "loai": "物理设备异常",
+        "so_luong": 2,
+        "ty_le": 0.09
+      },
+      {
+        "loai": "Yêu c?u ?ng đ?n th?t b?",
+        "so_luong": 1040,
+        "ty_le": 48.76
+      },
+      {
+        "loai": "Khóa Ô Phân Loại Quá Vòng",
+        "so_luong": 1,
+        "ty_le": 0.05
+      },
+      {
+        "loai": "Không Có Mã Vạch",
+        "so_luong": 896,
+        "ty_le": 42.01
+      }
+    ]
+  },
+  {
+    "file": "4.jpg",
+    "loai": "scada",
+    "model": "gemini-3.6-flash",
+    "model_lan_2": "gemini-3.6-flash",
+    "canh_bao": [
+      "OCR lần 1: Tên loại bất thường chứa ký tự '?' do lỗi hiển thị font ('Yêu cầu ?ng đơn th?t b?i')",
+      "OCR lần 2: Lỗi font hiển thị dấu ? ở một số từ tiếng Việt trong chú thích."
+    ],
+    "thoi_gian_tu": "2026-11-03 00:00",
+    "thoi_gian_den": "2026-11-03 23:59",
+    "day_chuyen": "CBs2 1st layer",
+    "so_luong_da_quet": 27648,
+    "so_luong_goi_theo_luoi": 27568,
+    "so_buu_kien_bat_thuong": 1115,
+    "ty_le_bat_thuong": 4.04,
+    "thoi_gian_quet_trung_binh": 1.0029,
+    "cong_suat_cao_nhat_1h": 6356,
+    "cong_suat_max_tu": "2026-11-03 00:25:00",
+    "cong_suat_max_den": "2026-11-03 01:24:00",
+    "phan_bo_bat_thuong": [
+      {
+        "loai": "Không có Báo cáo Phân loại",
+        "so_luong": 30,
+        "ty_le": 2.69
+      },
+      {
+        "loai": "Yêu cầu ?ng đơn th?t b?i",
+        "so_luong": 664,
+        "ty_le": 59.55
+      },
+      {
+        "loai": "Khóa Ô Phân Loại Quá Vòng",
+        "so_luong": 111,
+        "ty_le": 9.96
+      },
+      {
+        "loai": "Không Có Mã Vạch",
+        "so_luong": 350,
+        "ty_le": 31.39
+      }
+    ]
+  },
+  {
+    "file": "5.jpg",
+    "loai": "scada",
+    "model": "gemini-3.6-flash",
+    "model_lan_2": "gemini-3.6-flash",
+    "canh_bao": [
+      "OCR lần 1: Có ký tự '?' do lỗi font hiển thị ở loại bất thường 'Yêu cầu ?ng đến thất bại'.",
+      "OCR lần 2: Lỗi font hiển thị ký tự '?' trong chuỗi 'Yêu cầu ?ng đ?n th?t bại'",
+      "OCR lần 2: Tổng tỷ lệ phần trăm ở chú thích biểu đồ tròn vượt quá 100%"
+    ],
+    "thoi_gian_tu": "2026-11-03 00:00",
+    "thoi_gian_den": "2026-11-03 23:59",
+    "day_chuyen": "Inbound",
+    "so_luong_da_quet": 90949,
+    "so_luong_goi_theo_luoi": 77927,
+    "so_buu_kien_bat_thuong": 5767,
+    "ty_le_bat_thuong": 7.4,
+    "thoi_gian_quet_trung_binh": 1.1671,
+    "cong_suat_cao_nhat_1h": 8674,
+    "cong_suat_max_tu": "2026-11-03 21:19:00",
+    "cong_suat_max_den": "2026-11-03 22:18:00",
+    "phan_bo_bat_thuong": [
+      {
+        "loai": "Không có Báo cáo Phân loại",
+        "so_luong": 3,
+        "ty_le": 0.05
+      },
+      {
+        "loai": "格口设备异常",
+        "so_luong": 18,
+        "ty_le": 0.31
+      },
+      {
+        "loai": "Yêu cầu ?ng đến thất bại",
+        "so_luong": 2485,
+        "ty_le": 43.09
+      },
+      {
+        "loai": "Không Có Mã Vạch",
+        "so_luong": 3678,
+        "ty_le": 63.78
+      }
+    ]
+  }
+]

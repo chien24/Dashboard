@@ -1,0 +1,5 @@
+
+Quy tắc bắt buộc:
+- Chỉ chép số đúng như hiển thị trên ảnh. KHÔNG tính lại, làm tròn hay điều chỉnh bất kỳ giá trị nào để các tổng hoặc tỷ lệ khớp nhau.
+- Số trên màn hình có thể không khớp nhau (ví dụ tổng % trong chú thích lớn hơn 100%). Đó là bình thường, giữ nguyên.
+- Chỗ nào mờ, bị che, bị cắt hoặc số trông bất thường: vẫn chép phần đọc được và ghi mô tả ngắn vào canh_bao_ocr.

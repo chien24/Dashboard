@@ -1,0 +1,2 @@
+
+Đây là lần đọc kiểm tra độc lập: đọc lại toàn bộ từ đầu, soi kỹ từng chữ số nhỏ, nhất là trong chú thích và nhãn biểu đồ.

@@ -1,0 +1,19 @@
+/* Riêng trang dashboard: thẻ KPI, lưới biểu đồ, tooltip. */
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 8px; }
+.tile { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; min-width: 0; }
+.tile .k { font-size: 12px; color: var(--ink-2); }
+.tile .v { font-size: 24px; font-weight: 650; margin-top: 2px; }
+.tile .d { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.tile .pct { font-size: 15px; font-weight: 500; color: var(--ink-2); }
+.tile ul { margin: 4px 0 0; padding: 0; list-style: none; font-size: 13px; }
+.tile li { display: flex; justify-content: space-between; gap: 8px; }
+.kpi-day { margin: 0 0 10px; font-weight: 600; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 520px), 1fr)); gap: 12px; margin: 12px 0; }
+.legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--ink-2); margin-bottom: 4px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+svg { display: block; width: 100%; height: auto; }
+svg text { fill: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+#tip { position: fixed; pointer-events: none; z-index: 10; background: var(--surface); color: var(--ink); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; font-size: 12px; box-shadow: 0 4px 16px rgba(0,0,0,.15); display: none; min-width: 150px; }
+#tip b { display: block; margin-bottom: 4px; }
+#tip div { display: flex; justify-content: space-between; gap: 14px; }
+#tip i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 5px; }

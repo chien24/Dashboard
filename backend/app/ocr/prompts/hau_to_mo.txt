@@ -1,0 +1,2 @@
+
+Chỉ trả về JSON hợp lệ, không giải thích, không markdown. Giữ nguyên chữ tiếng Việt có dấu. Không đoán số: ô nào không đọc được thì để null.

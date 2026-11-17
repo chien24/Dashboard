@@ -1,0 +1,32 @@
+{
+  "file": "1.jpg",
+  "loai": "dmwcs_sorted",
+  "model": "gemini-3.6-flash",
+  "model_lan_2": "gemini-3.6-flash",
+  "canh_bao": [
+    "OCR lần 1: Dòng NoChute thứ hai bị cắt chữ ở mép phải",
+    "OCR lần 2: Dòng NoChute thứ hai bị cắt chữ ở mép phải khung nhập liệu"
+  ],
+  "thoi_gian_tu": "2026-11-09 00:00:00",
+  "thoi_gian_den": "2026-11-10 00:00:00",
+  "total": 108957,
+  "correct_chute": 81121,
+  "pda": 15758,
+  "reject_chute": 12078,
+  "no_read": {
+    "so_luong": 10053,
+    "ty_le": 83.23
+  },
+  "no_post_office": {
+    "so_luong": 1760,
+    "ty_le": 14.57
+  },
+  "no_chute": {
+    "so_luong": 265,
+    "ty_le": 2.19
+  },
+  "no_chute_danh_sach": "109/111/137/139/149/151/15",
+  "sort_failed": 716,
+  "pie_correct_pct": 88.9,
+  "pie_reject_pct": 11.1
+}

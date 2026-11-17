@@ -1,0 +1,12 @@
+Đây là ảnh chụp màn hình DMWCS Query System, báo cáo "The Report of Sorted parcels".
+Hãy đọc CHÍNH XÁC các giá trị sau và trả về JSON theo schema:
+1. Hai ô thời gian cạnh nút "Query" ở trên cùng (YYYY-MM-DD HH:MM:SS): ô thứ nhất là thoi_gian_tu, ô thứ hai là thoi_gian_den.
+2. Bảng bên phải, giá trị nằm trong ô nhập liệu ở cột phải, các dòng theo thứ tự:
+   Total, CorrectChute, PDA, RejectChute, NoRead, NoPostOffice, NoChute, NoChute (dòng thứ hai), SortFailed.
+   - NoRead, NoPostOffice và dòng NoChute thứ nhất có dạng "10053(83.23%)": so_luong = 10053, ty_le = 83.23.
+   - Dòng NoChute thứ hai là danh sách số máng ngăn bằng "/". Chép nguyên văn phần nhìn thấy trong ô.
+     Ô này thường bị cắt chữ ở mép phải: KHÔNG đoán hay bổ sung phần bị che, bỏ luôn chữ số bị cắt dở.
+3. Nhãn của biểu đồ tròn bên trái: "Correct: x %" -> pie_correct_pct, "Reject: y %" -> pie_reject_pct.
+Quy tắc:
+- Chép đúng từng chữ số, không làm tròn, không suy đoán.
+- Bỏ qua cây menu bên trái.

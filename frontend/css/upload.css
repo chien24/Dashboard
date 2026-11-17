@@ -1,0 +1,30 @@
+/* Trang upload + trang report. */
+.drop { display: block; margin: 16px 0; padding: 32px 16px; text-align: center; border: 2px dashed var(--border); border-radius: 10px; background: var(--surface); color: var(--ink-2); cursor: pointer; }
+.drop.over { border-color: var(--accent); background: var(--wash); }
+.item { display: grid; grid-template-columns: 96px 1fr; gap: 12px; padding: 12px; margin: 10px 0; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; }
+.item img { width: 96px; height: 72px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border); }
+.item-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.item-head .name { font-weight: 600; overflow-wrap: anywhere; }
+.state { font-size: 13px; color: var(--ink-2); }
+.state.done { color: #0ca30c; } .state.failed { color: var(--crit); } .state.dup { color: var(--warn-ink); }
+.result { grid-column: 1 / -1; }
+.result table { margin-top: 6px; }
+.warn-box { margin: 8px 0; padding: 8px 12px; border-radius: 6px; background: color-mix(in srgb, var(--warn) 22%, transparent); color: var(--ink); font-size: 13px; }
+.warn-box ul { margin: 4px 0 0; padding-left: 18px; }
+tr.lech td { background: color-mix(in srgb, var(--crit) 18%, transparent); }
+.status-badge { font-size: 12px; padding: 1px 8px; border-radius: 10px; border: 1px solid var(--border); }
+.status-badge.ok { color: #0ca30c; } .status-badge.can_kiem_tra { color: var(--warn-ink); } .status-badge.da_sua_tay { color: var(--accent); }
+
+/* report.html: ảnh trái, form phải */
+.report { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(320px, 1fr); gap: 16px; margin-top: 12px; }
+@media (max-width: 900px) { .report { grid-template-columns: 1fr; } }
+.viewer { overflow: auto; max-height: 80vh; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; cursor: zoom-in; }
+.viewer img { display: block; width: 100%; transform-origin: 0 0; }
+.viewer.zoom { cursor: zoom-out; } .viewer.zoom img { width: 220%; }
+.form { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
+.form fieldset { border: 1px solid var(--border); border-radius: 6px; margin: 8px 0; padding: 6px 10px; }
+.form legend { font-size: 12px; color: var(--ink-2); }
+.form label { display: grid; grid-template-columns: minmax(140px, 40%) 1fr; gap: 8px; align-items: center; font-size: 13px; margin: 4px 0; }
+.form input { width: 100%; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; align-items: center; }
+pre.raw { max-height: 320px; overflow: auto; font-size: 12px; background: var(--wash); padding: 8px; border-radius: 6px; }

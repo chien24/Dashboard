@@ -1,0 +1,35 @@
+{
+  "file": "2.jpg",
+  "loai": "dmwcs_capacity",
+  "model": "gemini-3.6-flash",
+  "model_lan_2": "gemini-3.6-flash",
+  "canh_bao": [],
+  "tu_ngay": "2026-11-05",
+  "den_ngay": "2026-11-10",
+  "cong_suat_theo_ngay": [
+    {
+      "ngay": "2026-11-05",
+      "cong_suat": 5987.75
+    },
+    {
+      "ngay": "2026-11-06",
+      "cong_suat": 5845.84
+    },
+    {
+      "ngay": "2026-11-07",
+      "cong_suat": 6061.54
+    },
+    {
+      "ngay": "2026-11-08",
+      "cong_suat": 4771.71
+    },
+    {
+      "ngay": "2026-11-09",
+      "cong_suat": 5889.57
+    },
+    {
+      "ngay": "2026-11-10",
+      "cong_suat": 6720.78
+    }
+  ]
+}

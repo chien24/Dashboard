@@ -1,0 +1,6 @@
+Ảnh này là ảnh chụp màn hình nào? Chọn đúng 1 giá trị cho trường loai:
+- scada: dashboard SCADA, trang "Thống kê và phân tích dữ liệu" (6 thẻ số liệu, biểu đồ tròn "Phân bổ loại bất thường").
+- dmwcs_sorted: DMWCS Query System, báo cáo "The Report of Sorted parcels" (bảng Total, CorrectChute, PDA, RejectChute...).
+- dmwcs_capacity: DMWCS Query System, báo cáo "The Report of Capacity" (biểu đồ vùng công suất theo ngày).
+- dmwcs_bcr_rate: DMWCS Query System, trang Hours&BcrRate (bảng BCR_NO | TOTAL | SUCCESS | FAILED | RATE).
+- khac: không thuộc loại nào ở trên.

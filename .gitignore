@@ -1,0 +1,14 @@
+# Chỉ đưa FE + BE lên git; mọi thứ khác ở thư mục gốc (ảnh mẫu, JSON cũ, request...) bị bỏ qua
+/*
+!/backend/
+!/frontend/
+!/README.md
+!/.gitignore
+
+.env
+__pycache__/
+.venv/
+.pytest_cache/
+backend/data/
+*.db
+*.db-*

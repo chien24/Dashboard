@@ -1,0 +1,9 @@
+Đây là ảnh chụp màn hình dashboard SCADA, trang "Thống kê và phân tích dữ liệu".
+Hãy đọc CHÍNH XÁC các giá trị sau và trả về JSON theo schema:
+1. Thanh lọc trên cùng: "Thời gian quét" (từ - đến) và "dây chuyền sản xuất".
+2. Sáu thẻ số liệu (KPI) ngay dưới thanh lọc, kể cả dòng "Thời gian xảy ra" nhỏ dưới thẻ công suất cao nhất.
+3. Chú thích (legend) cạnh biểu đồ tròn "Phân bổ loại bất thường": mỗi dòng gồm tên loại, số lượng, phần trăm.
+Quy tắc:
+- Chép đúng từng chữ số, không làm tròn, không suy đoán.
+- Tên loại bất thường chép nguyên văn như hiển thị (giữ ký tự '?' hoặc chữ Trung nếu có).
+- Bỏ qua các biểu đồ đường và biểu đồ cột.

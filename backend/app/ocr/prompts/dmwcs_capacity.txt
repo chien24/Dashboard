@@ -1,0 +1,9 @@
+Đây là ảnh chụp màn hình DMWCS Query System, báo cáo "The Report of Capacity".
+Hãy đọc CHÍNH XÁC các giá trị sau và trả về JSON theo schema:
+1. Hai ô ngày cạnh nút "Query" ở trên cùng: ô thứ nhất là tu_ngay, ô thứ hai là den_ngay (YYYY-MM-DD).
+2. Biểu đồ vùng: với mỗi điểm có nhãn số in phía trên, ghép nhãn đó với ngày ở trục X ngay bên dưới điểm. Liệt kê từ trái sang phải.
+Quy tắc:
+- Nhãn số dùng DẤU CÁCH để phân cách hàng nghìn, dấu chấm là thập phân: "5 987.75" nghĩa là 5987.75. Trả về số thuần.
+- Chỉ lấy nhãn số in trên ảnh, không ước lượng giá trị từ chiều cao đường. Điểm nào không có nhãn thì bỏ qua.
+- Bỏ qua nhãn trục Y (0k, 2k, 4k...), chú thích "Date" và cây menu bên trái.
+- Chép đúng từng chữ số, không làm tròn, không suy đoán.

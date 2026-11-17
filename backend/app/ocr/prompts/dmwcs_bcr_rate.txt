@@ -1,0 +1,9 @@
+Đây là ảnh chụp màn hình DMWCS Query System, trang Hours&BcrRate.
+Hãy đọc CHÍNH XÁC các giá trị sau và trả về JSON theo schema:
+1. Hai ô thời gian cạnh nút "Query" ở góc trên bên trái (YYYY-MM-DD HH:MM:SS): ô thứ nhất là thoi_gian_tu, ô thứ hai là thoi_gian_den.
+2. Bảng popup ở giữa màn hình, các cột BCR_NO | TOTAL | SUCCESS | FAILED | RATE: chép MỌI dòng có trong bảng, từ trên xuống.
+   - Chỉ chép những dòng thực sự có. Số BCR_NO có thể nhảy cóc (ví dụ không có BCR 4): KHÔNG tự thêm dòng, không điền 0.
+   - RATE bỏ dấu %, ví dụ "89.20%" -> 89.20.
+Quy tắc:
+- Bỏ qua biểu đồ "The Report of Workload", biểu đồ cột "The Report of Bcr Scanned Rate" phía sau popup và cây menu bên trái.
+- Nếu ảnh không có bảng BCR_NO (chụp nhầm màn hình), để bcr rỗng và ghi lý do vào canh_bao_ocr.

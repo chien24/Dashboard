@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Xem / sửa report</title>
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/upload.css">
+</head>
+<body>
+<nav class="topnav"><span class="brand">OCR Dashboard CNKT3</span>
+  <a href="index.html">Dashboard</a><a href="upload.html">Upload ảnh</a>
+  <span class="providers" id="providers"></span></nav>
+<main>
+  <h1 id="title">Report</h1>
+  <p class="sub" id="meta"></p>
+  <div id="warns"></div>
+  <div class="report">
+    <div class="viewer" id="viewer" title="Bấm để phóng to / thu nhỏ"><p class="hint" style="padding:12px">Không có ảnh gốc (report import từ JSON).</p></div>
+    <div>
+      <form class="form" id="form"></form>
+      <div class="actions">
+        <button class="btn primary" id="save">Lưu</button>
+        <span id="msg" class="hint"></span>
+      </div>
+      <details><summary>Sửa dạng JSON (thêm / bớt dòng)</summary><div>
+        <textarea id="json" rows="14" style="width:100%;font:12px monospace"></textarea>
+        <div class="actions"><button class="btn" id="save-json">Lưu JSON</button></div></div></details>
+      <details><summary>OCR lại</summary><div class="actions">
+        <select id="reocr-target"><option value="">Theo chuỗi fallback</option></select>
+        <button class="btn" id="reocr">OCR lại ảnh này</button><span id="reocr-msg" class="hint"></span></div></details>
+      <details><summary>Raw JSON 2 lần OCR · log fallback</summary><div><pre class="raw" id="raw"></pre></div></details>
+      <div class="actions"><button class="btn" id="delete">Xóa report</button></div>
+    </div>
+  </div>
+</main>
+<script src="../js/api.js"></script>
+<script src="../js/report.js"></script>
+</body>
+</html>

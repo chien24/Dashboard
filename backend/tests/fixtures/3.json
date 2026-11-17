@@ -1,0 +1,46 @@
+{
+  "file": "3.jpg",
+  "loai": "dmwcs_bcr_rate",
+  "model": "gemini-3.6-flash",
+  "model_lan_2": "gemini-3.6-flash",
+  "canh_bao": [],
+  "thoi_gian_tu": "2026-11-15 00:00:00",
+  "thoi_gian_den": "2026-11-16 00:00:00",
+  "bcr": [
+    {
+      "bcr_no": 1,
+      "total": 77079,
+      "success": 68753,
+      "failed": 8326,
+      "rate": 89.2
+    },
+    {
+      "bcr_no": 2,
+      "total": 18109,
+      "success": 16098,
+      "failed": 2011,
+      "rate": 88.9
+    },
+    {
+      "bcr_no": 3,
+      "total": 11159,
+      "success": 11159,
+      "failed": 0,
+      "rate": 100.0
+    },
+    {
+      "bcr_no": 5,
+      "total": 6202,
+      "success": 5466,
+      "failed": 736,
+      "rate": 88.13
+    },
+    {
+      "bcr_no": 6,
+      "total": 3795,
+      "success": 2973,
+      "failed": 822,
+      "rate": 78.34
+    }
+  ]
+}
