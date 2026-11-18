@@ -6,7 +6,7 @@
 <title>Thiên Đạo phong ấn</title>
 <link rel="icon" type="image/png" href="../img/favicon.png">
 <script>
-  // Trang phạt khi đăng nhập sai 5 lần: hết hạn (hoặc không có hạn) thì về Dashboard.
+  // Trang phạt khi đăng nhập sai 8 lần: hết hạn (hoặc không có hạn) thì về Dashboard.
   let until = 0;
   try { until = +localStorage.getItem("jail_until") || 0; } catch (e) {}
   if (!until) until = +new URLSearchParams(location.search).get("until") || 0;  // trình duyệt chặn localStorage
@@ -17,7 +17,7 @@
   * { box-sizing: border-box; }
   html, body { height: 100%; margin: 0; overflow: hidden; background: #050508; color: #f3f0ea;
     font: 15px/1.5 Roboto, "Segoe UI", system-ui, -apple-system, sans-serif; }
-  #bg { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  #bg { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center bottom; }  /* màn rộng: cắt phần trên, giữ dòng chữ ở đáy video */
   .shade { position: fixed; inset: 0; background: radial-gradient(ellipse at center, rgba(0,0,0,.15) 0%, rgba(0,0,0,.7) 100%); }
   .jail { position: fixed; inset: auto 0 0; padding: 0 16px calc(13vh + 24px);  /* chừa chỗ cho dòng chữ có sẵn ở đáy video */ display: grid; justify-items: center; gap: 4px; text-align: center; }
   .label { margin: 0; font-size: 13px; font-weight: 700; letter-spacing: .3em; text-transform: uppercase; color: var(--gold); text-shadow: 0 0 12px rgba(242,184,75,.6); }
@@ -45,7 +45,7 @@
 <main class="jail">
   <p class="label">Thiên Đạo phong ấn</p>
   <p class="clock" id="clock" role="timer" aria-label="Thời gian phong ấn còn lại">05:00</p>
-  <p class="note">Sai mật khẩu 5 lần. Hết thời gian phong ấn, ngươi sẽ được thả về.</p>
+  <p class="note">Sai mật khẩu 8 lần. Hết thời gian phong ấn, ngươi sẽ được thả về.</p>
 </main>
 <button class="sound" id="sound" type="button">Bật âm thanh</button>
 <div class="verdict" id="verdict" role="alert"></div>
@@ -57,13 +57,14 @@
   ];
   const $ = id => document.getElementById(id);
 
-  // Phán quyết ngẫu nhiên, hiện 4 giây
+  // Phán quyết ngẫu nhiên, hiện 10 giây
   const verdict = $("verdict");
   verdict.textContent = VERDICTS[Math.floor(Math.random() * VERDICTS.length)];
-  setTimeout(() => verdict.classList.add("hide"), 4000);
+  setTimeout(() => verdict.classList.add("hide"), 10000);
 
   // Nhạc lặp tới hết giờ. Trình duyệt có thể chặn tự phát tiếng: khi đó phát ở lần bấm / gõ phím đầu tiên.
   const music = $("music"), sound = $("sound");
+  music.volume = 0.5;
   const syncSound = () => sound.textContent = music.paused || music.muted ? "Bật âm thanh" : "Tắt âm thanh";
   const play = () => music.play().then(syncSound).catch(syncSound);
   sound.onclick = e => {

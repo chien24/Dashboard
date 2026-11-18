@@ -79,7 +79,7 @@ el("delete").addEventListener("click", async () => {
 (async () => {
   if (!id) return el("title").textContent = "Thiếu ?id= trên đường dẫn";
   if (!await api.authed) {
-    el("title").textContent = "Đăng nhập để xem / sửa report";
+    el("title").textContent = "Chưa nhập môn, không thể xem / sửa report";
     ["save", "save-json", "reocr", "delete"].forEach(k => el(k).disabled = true);
     return;
   }

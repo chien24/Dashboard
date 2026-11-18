@@ -39,11 +39,11 @@ def test_khoa_sau_nhieu_lan_sai(clean_db, monkeypatch):
     c, sai = TestClient(app), {"username": "x", "password": "y"}
     clock = [1000.0]
     monkeypatch.setattr(auth.time, "time", lambda: clock[0])
-    for i in range(1, auth.MAX_FAILS):  # 4 lần đầu: 401 kèm số lần đã sai
+    for i in range(1, auth.MAX_FAILS):  # MAX_FAILS-1 lần đầu: 401 kèm số lần đã sai
         r = c.post("/api/auth/login", json=sai)
         assert r.status_code == 401 and r.json()["detail"]["fails"] == i
-        clock[0] += 60
-    r = c.post("/api/auth/login", json=sai)  # lần thứ 5: khóa ngay, đủ 5 phút tính từ lúc này
+        clock[0] += 10
+    r = c.post("/api/auth/login", json=sai)  # lần thứ MAX_FAILS: khóa ngay, đủ 5 phút tính từ lúc này
     assert r.status_code == 429 and r.json()["detail"]["retry_after"] == auth.LOCK_S
     clock[0] += auth.LOCK_S - 1  # các lần sai cũ đã quá 5 phút nhưng khóa vẫn còn: đúng mật khẩu cũng bị chặn
     dung = {"username": config.AUTH_USER, "password": config.AUTH_PASSWORD}

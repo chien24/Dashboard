@@ -14,10 +14,10 @@
   <span class="brand">OCR Dashboard CNKT3</span>
   <button class="theme-btn" id="theme-btn" type="button"></button></header>
 <nav class="topnav">
-  <a href="index.html">Dashboard</a><a href="upload.html" aria-current="page">Upload ảnh</a><a href="history.html">Lịch sử</a></nav>
+  <a href="index.html">Thiên Cơ Các</a><a href="upload.html" aria-current="page">Truyền Pháp Ảnh</a><a href="history.html">Tàng Kinh Các</a></nav>
 <main>
-  <h1>Upload ảnh chụp màn hình</h1>
-  <p class="sub">SCADA hoặc DMWCS (Sorted, Capacity, BCR rate). Ảnh JPG / PNG, nhiều ảnh một lần. OCR chạy lần lượt từng ảnh.</p>
+  <h1>Truyền Tống Linh Ảnh</h1>
+  <p class="sub">Hệ thống SCADA hoặc DMWCS (Sorted, Capacity, BCR rate). Hỗ trợ định dạng Ảnh JPG / PNG, dung nạp nhiều ảnh cùng lúc. Thiên Đạo sẽ tiến hành phân tích từng đạo linh ảnh.</p>
 
   <label class="drop" id="drop">
     <input type="file" id="pick" accept=".jpg,.jpeg,.png,.webp" multiple hidden>
@@ -27,13 +27,13 @@
   <div class="filters">
     <label>Loại cho tất cả ảnh
       <select id="loai-all">
-        <option value="">Tự nhận diện</option>
+        <option value="">Thần Niệm (tự nhận diện)</option>
         <option value="scada">SCADA</option><option value="dmwcs_sorted">DMWCS Sorted</option>
         <option value="dmwcs_capacity">DMWCS Capacity</option><option value="dmwcs_bcr_rate">DMWCS BCR rate</option>
       </select></label>
-    <button class="btn primary" id="start" disabled>Bắt đầu OCR</button>
-    <button class="btn" id="clear">Xóa danh sách</button>
-    <span class="hint">"Tự nhận diện" tốn thêm 1 lần gọi API mỗi ảnh.</span>
+    <button class="btn primary" id="start" disabled>Khai Phá Thiên Cơ</button>
+    <button class="btn" id="clear">Xóa Bỏ Phế Tích</button>
+    <span class="hint">Dùng "Thần Niệm" sẽ tốn thêm 1 lần Thiên Cơ lệnh mỗi ảnh.</span>
   </div>
 
   <div id="items"></div>

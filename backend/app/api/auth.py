@@ -17,7 +17,7 @@ _KEY = hashlib.sha256((config.SESSION_SECRET or f"{config.AUTH_USER}:{config.AUT
 # shortcut: đếm sai mật khẩu theo IP trong RAM (mất khi restart, sau reverse proxy mọi người chung 1 IP); cần chặt hơn thì chuyển sang proxy/fail2ban.
 _fails: dict[str, list[float]] = {}
 _locked: dict[str, float] = {}  # ip -> thời điểm hết khóa
-MAX_FAILS, LOCK_S = 5, 300
+MAX_FAILS, LOCK_S = 8, 300
 
 
 def _sign(exp: int) -> str:

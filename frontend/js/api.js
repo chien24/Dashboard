@@ -83,14 +83,14 @@ const FOOTER = `<footer class="site-foot">
       <a class="foot-line" href="${MAP_URL}" target="_blank" rel="noopener">${ICON.pin}<span>Xem địa chỉ trên Google Maps</span></a>
     </div>
     <div class="foot-col">
-      <h4>Bạn cần hỗ trợ?</h4>
-      <p class="foot-line">${ICON.user}<span>Liên hệ anh Khoa · Phòng Kỹ thuật</span></p>
-      <p class="foot-hint">Liên hệ nếu cần giúp đỡ về hệ thống:</p>
+      <h4>Gặp Kiếp Nạn</h4>
+      <p class="foot-line">${ICON.user}<span>Cầu cứu Chấp Sự Khoa (Khoa Tôn giả) · Trấn Thủ Phòng Kỹ Thuật - Thiên Cơ Điện</span></p>
+      <p class="foot-hint">Truyền Âm Phù khi hệ thống nghịch loạn hoặc đứt đoạn linh mạch:</p>
       <a class="foot-line" href="mailto:${SUPPORT_EMAIL}">${ICON.mail}<span>${SUPPORT_EMAIL}</span></a>
     </div>
     <div class="foot-col">
-      <h4>Điều hướng</h4>
-      <a href="index.html">Dashboard</a><a href="upload.html">Upload ảnh</a><a href="history.html">Lịch sử</a>
+      <h4>Dẫn Lộ Bàn</h4>
+      <a href="index.html">Thiên Cơ Các</a><a href="upload.html">Truyền Pháp Ảnh</a><a href="history.html">Tàng Kinh Các</a>
     </div>
   </div>
   <div class="foot-bottom">
@@ -102,20 +102,28 @@ const FOOTER = `<footer class="site-foot">
 // Nút Đăng nhập / Đăng xuất trên header + hộp thoại đăng nhập (1 tài khoản dùng chung).
 const LOGIN_DLG = `<dialog class="login-dlg" id="login-dlg" aria-labelledby="login-h">
   <form id="login-form">
-    <h2 id="login-h">Đăng nhập</h2>
+    <h2 id="login-h">Nhập Môn</h2>
     <label>Tài khoản<input name="username" autocomplete="username" required></label>
     <label>Mật khẩu<input name="password" type="password" autocomplete="current-password" required></label>
     <div role="alert"><p class="err" id="login-err"></p><p class="login-hint" id="login-hint"></p></div>
     <div class="login-actions"><button class="btn" type="button" id="login-cancel">Hủy</button>
-      <button class="btn primary" type="submit">Đăng nhập</button></div>
+      <button class="btn primary" type="submit">Nhập Môn</button></div>
   </form>
 </dialog>`;
 const LOGIN_FAIL = "Tư chất quá kém, tiên duyên chưa đủ, mời ngươi quay về đi!";
-/** Câu phụ theo số lần đã sai (server đếm): lần 1 và lần áp chót mới có. */
+// Câu phụ cho lần sai thứ 2, 3, 4... (theo thứ tự, càng về sau càng nặng lời)
+const FAIL_HINTS = [
+  "Linh lực bất định, niệm chú sai bét! Đồ nhi ngoan, ngươi đang mượn cớ để được sư tôn gõ đầu đúng không?",
+  "Kẻ trí nhớ kém như ngươi mà cũng đòi nghịch thiên phá trận ư? Về Tàng Kinh Các chép lại một vạn lần khẩu quyết đi!",
+  "Nhập sai thêm lần nữa, bản tọa sẽ lột sạch tiên tịch, đày ngươi xuống phàm trần nuôi heo suốt ba kiếp đấy!",
+  "Nghịch tử, ngươi đang thử thách sự kiên nhẫn của Thiên Đạo đấy à? Hồn phách chuẩn bị chịu đòn roi lôi kiếp đi!",
+  "Vi phạm thiên quy nhiều lần, nguyên thần của ngươi xem ra không muốn giữ nữa rồi!",
+];
+/** Câu phụ theo số lần đã sai (server đếm): lần 1, lần 2..6 (FAIL_HINTS), lần áp chót. */
 function failHint(fails, max) {
   if (fails === 1) return `Nghịch thiên cải mệnh? Ta cho ngươi ${max - 1} lần giãy giụa nữa!`;
   if (fails === max - 1) return "Thiên uy khó phạm, ngươi chỉ còn duy nhất một lần cuối!";
-  return "";
+  return FAIL_HINTS[fails - 2] || "";
 }
 /** Sai quá số lần: nhốt ở trang phong ấn tới khi hết khóa (server báo số giây còn lại). */
 function goJail(seconds) {
@@ -160,11 +168,11 @@ async function initAuth() {
   const btn = Object.assign(document.createElement("button"), { type: "button", className: "auth-btn" });
   theme.before(btn);
   if (await api.authed) {
-    btn.textContent = "Đăng xuất";
-    btn.onclick = async () => { await api.logout().catch(() => {}); reloadWithToast("ok", "Đã đăng xuất."); };
+    btn.textContent = "Xuất Môn";
+    btn.onclick = async () => { await api.logout().catch(() => {}); reloadWithToast("ok", "Xuất Môn thành công. Hẹn ngày tái ngộ!"); };
     return;
   }
-  btn.textContent = "Đăng nhập";
+  btn.textContent = "Nhập Môn";
   document.body.insertAdjacentHTML("beforeend", LOGIN_DLG);
   const dlg = document.getElementById("login-dlg"), form = document.getElementById("login-form");
   const err = document.getElementById("login-err"), hint = document.getElementById("login-hint");
@@ -176,7 +184,7 @@ async function initAuth() {
     say("");
     try {
       await api.login(form.username.value.trim(), form.password.value);
-      reloadWithToast("ok", "Đăng nhập thành công.");
+      reloadWithToast("ok", "Nhập Môn thành công. Chào mừng đạo hữu!");
     } catch (x) {
       if (x.status === 429) return goJail(x.detail && x.detail.retry_after);
       if (x.status === 401 && x.detail && x.detail.fails) say(LOGIN_FAIL, failHint(x.detail.fails, x.detail.max_fails));

@@ -2,7 +2,7 @@
 const items = [];  // {file, url, el, loai}
 const $id = id => document.getElementById(id);
 
-const LOAI_OPTS = `<option value="*">Theo lựa chọn chung</option><option value="">Tự nhận diện</option>`
+const LOAI_OPTS = `<option value="*">Theo lựa chọn chung</option><option value="">Thần Niệm (tự nhận diện)</option>`
   + Object.entries(LOAI_TEN).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
 
 function addFiles(files) {
@@ -156,5 +156,5 @@ api.authed.then(ok => {
   $id("pick").disabled = true;
   ["loai-all", "start", "clear"].forEach(k => $id(k).disabled = true);
   drop.classList.add("locked");
-  drop.innerHTML = "<b>Cần đăng nhập để upload ảnh.</b> Bấm <b>Đăng nhập</b> ở góc trên bên phải.";
+  drop.innerHTML = "<b>Chưa nhập môn, chưa thể truyền ảnh.</b> Hãy thực hiện <b>Nhập Môn</b> ở góc trên bên phải.";
 });

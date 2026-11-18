@@ -23,7 +23,7 @@ let seq = 0;  // gõ nhanh: chỉ áp kết quả của lần tìm mới nhất
 async function reload() {
   const my = ++seq;
   if (!await api.authed) {  // chưa đăng nhập: danh sách trống, không gọi API
-    $("summary").textContent = "Đăng nhập để xem lịch sử báo cáo.";
+    $("summary").textContent = "Chưa Nhập môn, không thể tra cứu Tàng Kinh Các.";
     render("ht1"); render("ht2");
     return;
   }
@@ -72,7 +72,7 @@ function render(he) {
   $("c-" + he).textContent = s.total;
   if (!s.items.length) {
     el.innerHTML = `<p class="empty">${isFiltered() ? "Không có báo cáo nào khớp bộ lọc. Thử bỏ bớt điều kiện hoặc bấm <b>Xóa bộ lọc</b>."
-                                                    : `Chưa có báo cáo nào. <a href="upload.html">Upload ảnh</a> để bắt đầu.`}</p>`;
+                                                    : `Thiên Cơ trống rỗng. Hãy tiến hành <a href="upload.html">Nạp Linh Ảnh</a> để khai phá.`}</p>`;
     return;
   }
   let html = "", day = null;
