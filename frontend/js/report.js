@@ -44,7 +44,7 @@ function render(r) {
 async function save(data) {
   el("msg").textContent = "Đang lưu…";
   try {
-    render(await api.saveReport(id, data));
+    render(await api.saveReport(id, data, report.updated_at));
     el("msg").textContent = "Đã lưu. Dashboard dùng số liệu mới.";
   } catch (e) {
     el("msg").innerHTML = `<span class="err">${escHtml(e.message)}</span>`;
@@ -78,6 +78,11 @@ el("delete").addEventListener("click", async () => {
 
 (async () => {
   if (!id) return el("title").textContent = "Thiếu ?id= trên đường dẫn";
+  if (!await api.authed) {
+    el("title").textContent = "Đăng nhập để xem / sửa report";
+    ["save", "save-json", "reocr", "delete"].forEach(k => el(k).disabled = true);
+    return;
+  }
   try {
     render(await api.report(id));
     const ps = await api.providers();

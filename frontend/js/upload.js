@@ -6,6 +6,7 @@ const LOAI_OPTS = `<option value="*">Theo lựa chọn chung</option><option val
   + Object.entries(LOAI_TEN).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
 
 function addFiles(files) {
+  if ($id("drop").classList.contains("locked")) return;  // chưa đăng nhập
   for (const file of files) {
     if (!/\.(jpe?g|png|webp)$/i.test(file.name)) continue;
     const it = { file, url: URL.createObjectURL(file) };
@@ -160,4 +161,13 @@ function flatten(v, p = "", out = {}) {
 $id("start").addEventListener("click", async () => {
   $id("start").disabled = true;
   for (const it of items.filter(i => !i.sent)) await send(it);  // gửi lần lượt; backend cũng xử lý tuần tự
+});
+
+// Chưa đăng nhập: khóa chọn ảnh / upload (server cũng chặn, đây chỉ để người dùng biết vì sao).
+api.authed.then(ok => {
+  if (ok) return;
+  $id("pick").disabled = true;
+  ["loai-all", "start", "clear"].forEach(k => $id(k).disabled = true);
+  drop.classList.add("locked");
+  drop.innerHTML = "<b>Cần đăng nhập để upload ảnh.</b> Bấm <b>Đăng nhập</b> ở góc trên bên phải.";
 });

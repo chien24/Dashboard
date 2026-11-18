@@ -7,7 +7,7 @@ async function request(method, path, body) {
   else if (body !== undefined) { opt.body = JSON.stringify(body); opt.headers["Content-Type"] = "application/json"; }
   const res = await fetch(BASE_URL + path, opt);
   const data = await res.json().catch(() => null);
-  if (!res.ok) throw new Error((data && (typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail))) || res.statusText);
+  if (!res.ok) throw Object.assign(new Error((data && (typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail))) || res.statusText), { status: res.status });
   return data;
 }
 
@@ -17,8 +17,14 @@ const api = {
   put: (p, b) => request("PUT", p, b),
   del: (p) => request("DELETE", p),
 
-  /** Dữ liệu cho dashboard, đúng dạng JSON OCR cũ mà dashboard.js dùng. */
+  /** Đã đăng nhập chưa: hỏi server 1 lần mỗi trang, các trang await api.authed trước khi tải dữ liệu. */
+  authed: fetch(BASE_URL + "/auth/me").then(r => r.json()).then(d => !!d.logged_in).catch(() => false),
+  login: (username, password) => request("POST", "/auth/login", { username, password }),
+  logout: () => request("POST", "/auth/logout"),
+
+  /** Dữ liệu cho dashboard, đúng dạng JSON OCR cũ mà dashboard.js dùng. Chưa đăng nhập: rỗng (dashboard hiện ô trống). */
   async dashboardData() {
+    if (!await api.authed) return { scada: [], sorted: [], capacity: [], bcr: [] };
     const [scada, sorted, capacity, bcr] = await Promise.all(
       ["scada", "dmwcs/sorted", "dmwcs/capacity", "dmwcs/bcr"].map(p => request("GET", "/dashboard/" + p)));
     return { scada, sorted, capacity, bcr };
@@ -32,7 +38,7 @@ const api = {
   },
   job: (id) => request("GET", `/jobs/${id}`),
   report: (id) => request("GET", `/reports/${id}`),
-  saveReport: (id, data) => request("PUT", `/reports/${id}`, data),
+  saveReport: (id, data, updatedAt) => request("PUT", `/reports/${id}?updated_at=${encodeURIComponent(updatedAt)}`, data),
   reocr: (id, provider, model) => request("POST", `/reports/${id}/reocr`, { provider, model }),
   providers: () => request("GET", "/system/providers"),
 };
@@ -89,8 +95,104 @@ const FOOTER = `<footer class="site-foot">
   </div>
 </footer>`;
 
+// Nút Đăng nhập / Đăng xuất trên header + hộp thoại đăng nhập (1 tài khoản dùng chung).
+const LOGIN_DLG = `<dialog class="login-dlg" id="login-dlg" aria-labelledby="login-h">
+  <form id="login-form">
+    <h2 id="login-h">Đăng nhập</h2>
+    <label>Tài khoản<input name="username" autocomplete="username" required></label>
+    <label>Mật khẩu<input name="password" type="password" autocomplete="current-password" required></label>
+    <p class="err" id="login-err" role="alert"></p>
+    <div class="login-actions"><button class="btn" type="button" id="login-cancel">Hủy</button>
+      <button class="btn primary" type="submit">Đăng nhập</button></div>
+  </form>
+</dialog>`;
+async function initAuth() {
+  const theme = document.getElementById("theme-btn");
+  if (!theme) return;
+  const btn = Object.assign(document.createElement("button"), { type: "button", className: "auth-btn" });
+  theme.before(btn);
+  if (await api.authed) {
+    btn.textContent = "Đăng xuất";
+    btn.onclick = async () => { await api.logout().catch(() => {}); location.reload(); };
+    return;
+  }
+  btn.textContent = "Đăng nhập";
+  document.body.insertAdjacentHTML("beforeend", LOGIN_DLG);
+  const dlg = document.getElementById("login-dlg"), form = document.getElementById("login-form"), err = document.getElementById("login-err");
+  btn.onclick = () => { err.textContent = ""; dlg.showModal(); };
+  document.getElementById("login-cancel").onclick = () => dlg.close();
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    err.textContent = "";
+    try { await api.login(form.username.value.trim(), form.password.value); location.reload(); }
+    catch (x) { err.textContent = x.message; form.password.select(); }
+  });
+}
+
+// Logo Thiên Đạo: sao 8 cánh + vòng xoáy + khung kim loại có cánh. SVG nhúng thẳng để đổi màu theo sáng/tối (token --logo-* trong base.css).
+const LOGO_THIEN_DAO = `<svg class="welcome-logo" viewBox="0 0 120 120" width="136" height="136" role="img" aria-label="Logo Thiên Đạo">
+  <defs>
+    <linearGradient id="wl-metal" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/><stop offset=".35" stop-color="#aeb7c4"/><stop offset=".6" stop-color="#eef1f5"/><stop offset="1" stop-color="#5f6879"/>
+    </linearGradient>
+    <radialGradient id="wl-core" cx="50%" cy="45%" r="60%">
+      <stop offset="0" style="stop-color: var(--logo-core)"/><stop offset="1" style="stop-color: var(--logo-core-2)"/>
+    </radialGradient>
+    <radialGradient id="wl-star" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#ffffff"/><stop offset=".45" stop-color="#bfe8ff"/><stop offset="1" style="stop-color: var(--logo-swirl)"/>
+    </radialGradient>
+    <filter id="wl-glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2.4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <g fill="url(#wl-metal)" stroke="#3b4658" stroke-width=".6">
+    <path d="M6 58l13-5v10z"/><path d="M114 58l-13-5v10z"/><path d="M60 4l-4.5 10h9z"/>
+  </g>
+  <circle cx="60" cy="58" r="40" fill="url(#wl-core)"/>
+  <g class="wl-swirl" fill="none" stroke-linecap="round" filter="url(#wl-glow)">
+    <path d="M28 44A34 34 0 0 1 94 48" style="stroke: var(--logo-swirl)" stroke-width="2.6"/>
+    <path d="M92 74A34 34 0 0 1 27 70" style="stroke: var(--logo-accent)" stroke-width="2.2"/>
+    <path d="M40 27A32 32 0 0 1 84 32" style="stroke: var(--logo-swirl)" stroke-width="1.2" opacity=".6"/>
+    <path d="M84 88A32 32 0 0 1 36 87" style="stroke: var(--logo-swirl)" stroke-width="1.2" opacity=".5"/>
+  </g>
+  <g fill="#ffffff"><circle cx="38" cy="38" r=".9"/><circle cx="84" cy="40" r="1.1"/><circle cx="44" cy="80" r=".8"/><circle cx="80" cy="76" r=".9"/><circle cx="70" cy="34" r=".7"/></g>
+  <circle cx="60" cy="58" r="44" fill="none" stroke="url(#wl-metal)" stroke-width="5"/>
+  <circle cx="60" cy="58" r="40.5" fill="none" style="stroke: var(--logo-accent)" stroke-width="1" opacity=".8"/>
+  <path d="M60 40l3 15 15 3-15 3-3 15-3-15-15-3 15-3z" style="fill: var(--logo-accent)" opacity=".85" transform="rotate(45 60 58)"/>
+  <path d="M60 30l1.9 23.4 8-5.3-5.3 8L88 58l-23.4 1.9 5.3 8-8-5.3L60 86l-1.9-23.4-8 5.3 5.3-8L32 58l23.4-1.9-5.3-8 8 5.3z"
+        fill="url(#wl-star)" style="stroke: var(--logo-star-edge)" stroke-width=".8" stroke-linejoin="round" filter="url(#wl-glow)"/>
+  <g fill="url(#wl-metal)" stroke="#3b4658" stroke-width=".6" stroke-linejoin="round">
+    <path d="M60 116C51 106 41 98 20 93c13-1 22 0 29 3-8-7-15-14-19-25 9 9 18 17 30 25z"/>
+    <path d="M60 116C69 106 79 98 100 93c-13-1-22 0-29 3 8-7 15-14 19-25-9 9-18 17-30 25z"/>
+  </g>
+</svg>`;
+// Popup chào mừng: chỉ hiện lần đầu mở web trong phiên (sessionStorage), reload hay chuyển trang không hiện lại.
+const WELCOME = `<dialog class="welcome-dlg" id="welcome-dlg" aria-labelledby="welcome-h" aria-describedby="welcome-p" tabindex="-1">
+  <button class="welcome-x" type="button" data-close aria-label="Đóng">✕</button>
+  ${LOGO_THIEN_DAO}
+  <h2 id="welcome-h">Chào mừng bạn đến với hệ thống Thiên Đạo</h2>
+  <p id="welcome-p">Chào mừng bạn đã gia nhập hệ thống giám sát và vận hành Thiên Đạo. Hãy cùng khám phá và tối ưu hóa hiệu suất ngay hôm nay!</p>
+  <div class="welcome-actions"><button class="welcome-go" type="button" data-close>Bắt đầu ngay</button>
+    <button class="welcome-skip" type="button" data-close>Bỏ qua</button></div>
+</dialog>`;
+function showWelcome() {
+  try {
+    if (sessionStorage.getItem("welcomed")) return;
+    sessionStorage.setItem("welcomed", "1");
+  } catch (e) { return; }  // trình duyệt chặn storage: không hiện, tránh hiện lại mỗi lần reload
+  document.body.insertAdjacentHTML("beforeend", WELCOME);
+  const dlg = document.getElementById("welcome-dlg");
+  dlg.querySelectorAll("[data-close]").forEach(b => b.onclick = () => dlg.close());
+  dlg.addEventListener("click", e => { if (e.target === dlg) dlg.close(); });  // bấm ra nền tối thì đóng
+  dlg.addEventListener("close", () => dlg.remove());
+  dlg.showModal();
+  dlg.focus();  // focus vào popup chứ không vào nút X (tránh viền focus ngay khi mở); Tab vẫn đi tới các nút
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   document.body.insertAdjacentHTML("beforeend", FOOTER);
+  initAuth();
+  showWelcome();
   document.getElementById("to-top").addEventListener("click", () =>
     scrollTo({ top: 0, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }));
   document.getElementById("theme-btn")?.addEventListener("click", () => {

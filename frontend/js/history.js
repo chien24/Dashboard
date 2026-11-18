@@ -22,6 +22,11 @@ function query(he, offset) {
 let seq = 0;  // gõ nhanh: chỉ áp kết quả của lần tìm mới nhất
 async function reload() {
   const my = ++seq;
+  if (!await api.authed) {  // chưa đăng nhập: danh sách trống, không gọi API
+    $("summary").textContent = "Đăng nhập để xem lịch sử báo cáo.";
+    render("ht1"); render("ht2");
+    return;
+  }
   $("summary").textContent = "Đang tìm…";
   try {
     const [a, b] = await Promise.all([query("ht1", 0), query("ht2", 0)]);

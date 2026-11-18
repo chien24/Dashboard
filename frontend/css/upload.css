@@ -1,6 +1,7 @@
 /* Trang upload + trang report. */
 .drop { display: block; margin: 16px 0; padding: 32px 16px; text-align: center; border: 2px dashed var(--axis); border-radius: 12px; background: var(--surface); color: var(--ink-2); cursor: pointer; }
 .drop.over { border-color: var(--accent); background: var(--wash); }
+.drop.locked { cursor: default; opacity: .7; }
 .item { display: grid; grid-template-columns: 96px 1fr; gap: 12px; padding: 12px; margin: 10px 0; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); }
 .item img { width: 96px; height: 72px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border); }
 .item-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
