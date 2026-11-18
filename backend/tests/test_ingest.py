@@ -3,8 +3,7 @@ import copy
 import json
 
 import pytest
-from conftest import FIXTURES
-from fastapi.testclient import TestClient
+from conftest import FIXTURES, client
 from sqlalchemy import select
 
 from app.db import SessionLocal
@@ -81,7 +80,7 @@ def test_ghi_de_khi_trung(db):
 
 
 def test_api_dashboard_va_sua_tay(db):
-    c = TestClient(__import__("app.main", fromlist=["app"]).app)  # không dùng `with`: không chạy worker/scheduler
+    c = client()
     scada = c.get("/api/dashboard/scada", params={"from": "2026-11-01", "to": "2026-11-30"}).json()
     assert len(scada) == 4 and all(r["phan_bo_bat_thuong"] for r in scada)
     assert c.get("/api/dashboard/scada", params={"day_chuyen": "CBS2 1st layer"}).json()[0]["so_luong_da_quet"] == 27648
@@ -93,10 +92,15 @@ def test_api_dashboard_va_sua_tay(db):
     assert r["status"] == "da_sua_tay" and any("khác Total" in w for w in r["canh_bao"])
     assert c.get("/api/dashboard/dmwcs/sorted").json()[0]["total"] == 1
     assert c.put(f"/api/reports/{rid}", json={**data, "total": "abc"}).status_code == 422
+    # 2 máy mở cùng bản: máy A lưu trước, máy B lưu bằng bản cũ thì bị từ chối (409), không ghi đè im lặng
+    cu = c.get(f"/api/reports/{rid}").json()["updated_at"]
+    assert c.put(f"/api/reports/{rid}", params={"updated_at": cu}, json={**data, "total": 2}).status_code == 200
+    assert c.put(f"/api/reports/{rid}", params={"updated_at": cu}, json={**data, "total": 3}).status_code == 409
+    assert c.get("/api/dashboard/dmwcs/sorted").json()[0]["total"] == 2
 
 
 def test_lich_su_tim_kiem(db):
-    c = TestClient(__import__("app.main", fromlist=["app"]).app)
+    c = client()
     moi = copy.deepcopy(rec("1.json"))
     moi.update(file="Sorted_Moi.jpg", total=108958)
     ingest(db, to_result(moi), source_name="Sorted_Moi.jpg")  # ghi đè bản sorted cũ trên dashboard

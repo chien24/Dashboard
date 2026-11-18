@@ -1,14 +1,14 @@
 """CRUD report: danh sách, chi tiết, sửa tay, xóa, OCR lại."""
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 
 from app import config
 from app.api.upload import new_job
 from app.db import get_db
-from app.models import DmwcsBcr, DmwcsCapacityDaily, DmwcsSorted, Report, ScadaSummary
+from app.models import DmwcsBcr, DmwcsCapacityDaily, DmwcsSorted, Report, ScadaSummary, now
 from app.ocr.providers.base import BadOutput, validate_output
 from app.schemas import SCHEMAS
 from app.services.ingest import write_details
@@ -40,7 +40,7 @@ def summary(rep: Report) -> dict:
     return {"id": rep.id, "loai": rep.loai, "file": rep.source_name, "status": rep.status, "report_date": rep.report_date,
             "thoi_gian_tu": rep.thoi_gian_tu, "thoi_gian_den": rep.thoi_gian_den, "provider": rep.provider,
             "model": rep.model, "model_lan_2": rep.model_lan_2, "so_canh_bao": len(rep.canh_bao or []),
-            "upload_id": rep.upload_id, "created_at": rep.created_at}
+            "upload_id": rep.upload_id, "created_at": rep.created_at, "updated_at": rep.updated_at}
 
 
 def get_or_404(db, rid: int) -> Report:
@@ -93,9 +93,16 @@ def get_report(rid: int, db=Depends(get_db)):
 
 
 @router.put("/{rid}")
-def edit_report(rid: int, data: dict = Body(...), db=Depends(get_db)):
-    """Sửa tay khi OCR sai: validate schema + số học lại, status = da_sua_tay. raw_json giữ nguyên."""
+def edit_report(rid: int, data: dict = Body(...), updated_at: datetime | None = None, db=Depends(get_db)):
+    """Sửa tay khi OCR sai: validate schema + số học lại, status = da_sua_tay. raw_json giữ nguyên.
+    updated_at = giá trị lúc mở report; máy khác đã lưu sau đó thì trả 409 thay vì ghi đè im lặng."""
     rep = get_or_404(db, rid)
+    if updated_at is not None:
+        # UPDATE có điều kiện = kiểm tra và giữ khóa ghi trong 1 lệnh: 2 máy lưu cùng lúc thì chỉ 1 máy qua
+        hit = db.execute(update(Report).where(Report.id == rid, Report.updated_at == updated_at)
+                         .values(updated_at=now()).execution_options(synchronize_session=False)).rowcount
+        if not hit:
+            raise HTTPException(409, "Report này vừa được sửa ở máy khác. Tải lại trang để xem bản mới rồi sửa lại.")
     data = {k: v for k, v in data.items() if k != "canh_bao_ocr"}
     try:
         clean = validate_output(SCHEMAS[rep.loai], {**data, "canh_bao_ocr": []})

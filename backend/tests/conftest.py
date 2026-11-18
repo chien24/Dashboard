@@ -14,6 +14,18 @@ from app.db import Base, engine, init_db  # noqa: E402
 FIXTURES = Path(__file__).parent / "fixtures"
 
 
+def client():
+    """TestClient đã đăng nhập. Không dùng `with`: không chạy worker/scheduler."""
+    from fastapi.testclient import TestClient
+
+    from app import config
+    from app.main import app
+
+    c = TestClient(app)
+    assert c.post("/api/auth/login", json={"username": config.AUTH_USER, "password": config.AUTH_PASSWORD}).status_code == 200
+    return c
+
+
 @pytest.fixture
 def clean_db():
     """DB trống cho mỗi test."""

@@ -23,6 +23,10 @@ OCR_CONCURRENCY = int(os.environ.get("OCR_CONCURRENCY", 1))
 OCR_PASSES = int(os.environ.get("OCR_PASSES", 2))
 MAX_UPLOAD_MB = float(os.environ.get("MAX_UPLOAD_MB", 10))
 TIMEOUT_S = 120
+# Tài khoản dùng chung (đổi trong .env khi deploy). SESSION_SECRET: chuỗi ngẫu nhiên dài để ký cookie phiên.
+AUTH_USER = os.environ.get("AUTH_USER")
+AUTH_PASSWORD = os.environ.get("AUTH_PASSWORD")
+SESSION_SECRET = os.environ.get("SESSION_SECRET")
 
 KEYS = {"gemini": "GEMINI_API_KEY", "nvidia": "NVIDIA_API_KEY", "openrouter": "OPEN_ROUTER_API_KEY"}
 

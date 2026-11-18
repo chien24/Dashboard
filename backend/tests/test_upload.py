@@ -9,6 +9,7 @@ from app import config
 from app.main import app
 
 c = TestClient(app)  # không dùng `with`: không chạy worker/scheduler, job chỉ nằm ở trạng thái pending
+c.post("/api/auth/login", json={"username": config.AUTH_USER, "password": config.AUTH_PASSWORD})
 
 
 def png(color="red") -> bytes:

@@ -7,11 +7,11 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
-from fastapi.responses import RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from app import config
-from app.api import dashboard, reports, system, upload
+from app.api import auth, dashboard, reports, system, upload
 from app.db import SessionLocal, engine, init_db
 from app.ocr.router import reset_provider_disabled_on_start
 from app.services import retention, worker
@@ -43,8 +43,24 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="OCR Dashboard CNKT3", lifespan=lifespan)
-for r in (upload.router, reports.router, dashboard.router, system.router):
+for r in (auth.router, upload.router, reports.router, dashboard.router, system.router):
     app.include_router(r)
+PRIVATE = ("/api/", "/uploads/", "/docs", "/redoc", "/openapi.json")  # Swagger cũng cần đăng nhập: lộ sơ đồ API
+PUBLIC = ("/api/auth/", "/api/system/health")
+
+
+@app.middleware("http")
+async def require_login(request, call_next):
+    """Chưa đăng nhập: chặn mọi API dữ liệu và ảnh đã upload; HTML/CSS/JS vẫn tải được (trang hiện ô trống)."""
+    p = request.url.path
+    if not p.startswith(PRIVATE) or p.startswith(PUBLIC):
+        return await call_next(request)
+    if not auth.is_logged_in(request):
+        return JSONResponse({"detail": "Cần đăng nhập"}, status_code=401)
+    resp = await call_next(request)
+    # private: proxy/CDN (Vercel, Cloudflare) không lưu; no-cache: trình duyệt hỏi lại server mỗi lần, đăng xuất rồi không mở lại được từ cache
+    resp.headers["Cache-Control"] = "private, no-cache"
+    return resp
 
 
 @app.middleware("http")
