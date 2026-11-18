@@ -38,13 +38,4 @@ pre.raw { max-height: 320px; overflow: auto; font-size: 12px; background: var(--
 .err-box { margin: 8px 0; padding: 8px 12px; border-radius: 6px; background: color-mix(in srgb, var(--crit) 16%, transparent); color: var(--ink); font-size: 13px; }
 .err-box .btn { margin-top: 6px; }
 
-/* thông báo nổi góc phải dưới */
-#toasts { position: fixed; right: 16px; bottom: 16px; z-index: 20; display: grid; gap: 8px; width: min(380px, calc(100vw - 32px)); }
-.toast { display: flex; gap: 10px; align-items: start; padding: 12px 12px 12px 14px; font-size: 13px; color: var(--ink);
-  background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--muted); border-radius: 10px;
-  box-shadow: 0 8px 28px rgba(0,0,0,.22); animation: toast-in .2s ease-out; }
-.toast.ok { border-left-color: #0ca30c; } .toast.warn { border-left-color: var(--warn); } .toast.fail { border-left-color: var(--crit); }
-.toast > div { overflow-wrap: anywhere; }
-.toast button { margin-left: auto; padding: 0 4px; border: 0; background: none; color: var(--muted); font-size: 18px; line-height: 1; cursor: pointer; }
-@keyframes toast-in { from { transform: translateY(8px); opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .progress.busy .bar, .toast { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .progress.busy .bar { animation: none; } }

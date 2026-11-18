@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thiên Đạo phong ấn</title>
+<link rel="icon" type="image/png" href="../img/favicon.png">
+<script>
+  // Trang phạt khi đăng nhập sai 5 lần: hết hạn (hoặc không có hạn) thì về Dashboard.
+  let until = 0;
+  try { until = +localStorage.getItem("jail_until") || 0; } catch (e) {}
+  if (!until) until = +new URLSearchParams(location.search).get("until") || 0;  // trình duyệt chặn localStorage
+  if (until <= Date.now()) location.replace("index.html");
+</script>
+<style>
+  :root { color-scheme: dark; --red: #ff2a4d; --gold: #f2b84b; }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; overflow: hidden; background: #050508; color: #f3f0ea;
+    font: 15px/1.5 Roboto, "Segoe UI", system-ui, -apple-system, sans-serif; }
+  #bg { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .shade { position: fixed; inset: 0; background: radial-gradient(ellipse at center, rgba(0,0,0,.15) 0%, rgba(0,0,0,.7) 100%); }
+  .jail { position: fixed; inset: auto 0 0; padding: 0 16px calc(13vh + 24px);  /* chừa chỗ cho dòng chữ có sẵn ở đáy video */ display: grid; justify-items: center; gap: 4px; text-align: center; }
+  .label { margin: 0; font-size: 13px; font-weight: 700; letter-spacing: .3em; text-transform: uppercase; color: var(--gold); text-shadow: 0 0 12px rgba(242,184,75,.6); }
+  .clock { margin: 0; font-size: clamp(56px, 14vw, 104px); font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums;
+    text-shadow: 0 0 24px rgba(255,42,77,.85), 0 0 2px #000; }
+  .note { margin: 6px 0 0; font-size: 14px; color: rgba(243,240,234,.8); text-shadow: 0 1px 2px #000; }
+  .sound { position: fixed; top: 16px; right: 16px; padding: 8px 14px; border-radius: 999px; font: inherit; font-size: 13px; font-weight: 600;
+    color: #fff; background: rgba(0,0,0,.45); border: 1px solid rgba(255,255,255,.35); cursor: pointer; backdrop-filter: blur(4px); }
+  .sound:hover { border-color: var(--red); }
+  .sound:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+  .verdict { position: fixed; top: 50%; left: 50%; width: min(560px, calc(100vw - 32px)); padding: 28px 28px; transform: translate(-50%, -50%);
+    text-align: center; font-size: clamp(18px, 3.4vw, 24px); font-weight: 800; line-height: 1.45; letter-spacing: .02em;
+    background: rgba(12,6,10,.82); border: 1.5px solid rgba(255,42,77,.75); border-radius: 16px;
+    box-shadow: 0 0 0 4px rgba(255,42,77,.12), 0 0 60px rgba(255,42,77,.55); text-shadow: 0 0 12px rgba(255,42,77,.6);
+    animation: verdict-in .35s ease-out; transition: opacity .5s; }
+  .verdict.hide { opacity: 0; pointer-events: none; }
+  @keyframes verdict-in { from { opacity: 0; transform: translate(-50%, -50%) scale(.92); } }
+  @media (prefers-reduced-motion: reduce) { .verdict { animation: none; transition: none; } }
+</style>
+</head>
+<body>
+<video id="bg" src="../media/thien_dao_giam_cam_v3.mp4" autoplay muted loop playsinline aria-hidden="true"></video>
+<audio id="music" src="../media/nhac_nen.mp3" loop></audio>
+<div class="shade"></div>
+<main class="jail">
+  <p class="label">Thiên Đạo phong ấn</p>
+  <p class="clock" id="clock" role="timer" aria-label="Thời gian phong ấn còn lại">05:00</p>
+  <p class="note">Sai mật khẩu 5 lần. Hết thời gian phong ấn, ngươi sẽ được thả về.</p>
+</main>
+<button class="sound" id="sound" type="button">Bật âm thanh</button>
+<div class="verdict" id="verdict" role="alert"></div>
+<script>
+  const VERDICTS = [
+    "TÊN TÀ TU KIA, NGƯƠI BỊ GIAM CẦM SUỐT MỘT CHÉN TRÀ, NAY SINH TỬ ĐẮP ĐỔI, CÒN GÌ ĐỂ TRỐI TRĂN?",
+    "GIAM NGƯƠI MỘT CHÉN TRÀ NHỎ, CHÍNH LÀ ĐỂ MÀI MÒN CÁI GỌI LÀ NGẠO KHÍ THIÊN TÀI CỦA NGƯƠI ĐẤY!",
+    "MỘT CHÉN TRÀ TRÔI QUA, THIÊN ĐẠO LUÂN HỒI, ĐẾN LÚC NGƯƠI PHẢI TRẢ GIÁ RỒI!",
+  ];
+  const $ = id => document.getElementById(id);
+
+  // Phán quyết ngẫu nhiên, hiện 4 giây
+  const verdict = $("verdict");
+  verdict.textContent = VERDICTS[Math.floor(Math.random() * VERDICTS.length)];
+  setTimeout(() => verdict.classList.add("hide"), 4000);
+
+  // Nhạc lặp tới hết giờ. Trình duyệt có thể chặn tự phát tiếng: khi đó phát ở lần bấm / gõ phím đầu tiên.
+  const music = $("music"), sound = $("sound");
+  const syncSound = () => sound.textContent = music.paused || music.muted ? "Bật âm thanh" : "Tắt âm thanh";
+  const play = () => music.play().then(syncSound).catch(syncSound);
+  sound.onclick = e => {
+    e.stopPropagation();
+    if (music.paused) { music.muted = false; play(); } else { music.muted = !music.muted; syncSound(); }
+  };
+  addEventListener("pointerdown", () => music.paused && play(), { once: true });
+  addEventListener("keydown", () => music.paused && play(), { once: true });
+  play();
+
+  // Không cho rời trang: nút Back luôn quay lại đây (các trang khác cũng tự chuyển về đây khi còn hạn)
+  history.pushState(null, "", location.href);
+  addEventListener("popstate", () => history.pushState(null, "", location.href));
+
+  // Đếm ngược; hết giờ thì gỡ phong ấn và về Dashboard
+  const clock = $("clock");
+  function tick() {
+    const left = Math.max(0, Math.ceil((until - Date.now()) / 1000));
+    clock.textContent = String(Math.floor(left / 60)).padStart(2, "0") + ":" + String(left % 60).padStart(2, "0");
+    if (left > 0) return;
+    clearInterval(timer);
+    music.pause();
+    try { localStorage.removeItem("jail_until"); } catch (e) {}
+    location.replace("index.html");
+  }
+  const timer = setInterval(tick, 1000);
+  tick();
+</script>
+</body>
+</html>

@@ -62,19 +62,6 @@ function tickElapsed(it) {
 /** Bỏ tên exception ở đầu lỗi backend ("ValueError: ...") cho dễ đọc. */
 const niceError = e => String(e || "Lỗi không rõ").replace(/^[A-Za-z]+(Error|Failed|Exception)?: /, "");
 
-/** Thông báo nổi góc phải dưới. kind: ok | warn | fail. Lỗi giữ tới khi đóng, còn lại tự ẩn sau 8s. */
-function toast(kind, html) {
-  const box = $id("toasts");
-  const t = document.createElement("div");
-  t.className = "toast " + kind;
-  t.setAttribute("role", kind === "fail" ? "alert" : "status");
-  t.innerHTML = `<div>${html}</div><button type="button" aria-label="Đóng thông báo">×</button>`;
-  t.querySelector("button").onclick = () => t.remove();
-  box.append(t);
-  while (box.children.length > 4) box.firstElementChild.remove();
-  if (kind !== "fail") setTimeout(() => t.remove(), 8000);
-}
-
 function finish(it, kind, stateHtml, toastHtml) {
   clearInterval(it.timer);
   tickElapsed(it);

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Upload ảnh OCR</title>
 <link rel="icon" type="image/png" href="../img/favicon.png">
-<script>try { const t = localStorage.getItem("theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
+<script>try { if (+localStorage.getItem("jail_until") > Date.now()) location.replace("jail.html"); const t = localStorage.getItem("theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
 <link rel="stylesheet" href="../css/base.css?v=5">
 <link rel="stylesheet" href="../css/upload.css?v=3">
 </head>

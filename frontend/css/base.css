@@ -158,3 +158,15 @@ main { width: 100%; }
 .to-top:hover { border-color: #ff5c77; color: #ff5c77; }
 .site-foot :focus-visible { outline-color: #fff; }
 @media (max-width: 760px) { .foot-in { grid-template-columns: 1fr; } .foot-col { padding-left: 0; border-left: 0; padding-top: 16px; border-top: 1px solid rgba(255,255,255,.12); } }
+.login-hint { margin: 0 0 8px; font-size: 13px; font-weight: 600; color: var(--warn-ink); }
+.login-hint:empty { display: none; }
+/* thông báo nổi góc phải dưới (toast() trong api.js, dùng chung mọi trang) */
+#toasts { position: fixed; right: 16px; bottom: 16px; z-index: 20; display: grid; gap: 8px; width: min(380px, calc(100vw - 32px)); }
+.toast { display: flex; gap: 10px; align-items: start; padding: 12px 12px 12px 14px; font-size: 13px; color: var(--ink);
+  background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--muted); border-radius: 10px;
+  box-shadow: 0 8px 28px rgba(0,0,0,.22); animation: toast-in .2s ease-out; }
+.toast.ok { border-left-color: #0ca30c; } .toast.warn { border-left-color: var(--warn); } .toast.fail { border-left-color: var(--crit); }
+.toast > div { overflow-wrap: anywhere; }
+.toast button { margin-left: auto; padding: 0 4px; border: 0; background: none; color: var(--muted); font-size: 18px; line-height: 1; cursor: pointer; }
+@keyframes toast-in { from { transform: translateY(8px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .toast { animation: none; } }

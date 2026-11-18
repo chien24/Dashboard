@@ -35,10 +35,19 @@ def test_dang_nhap_dang_xuat(clean_db):
     assert c.get("/api/reports").status_code == 401
 
 
-def test_khoa_sau_nhieu_lan_sai(clean_db):
-    c = TestClient(app)
-    for _ in range(auth.MAX_FAILS):
-        c.post("/api/auth/login", json={"username": "x", "password": "y"})
-    r = c.post("/api/auth/login", json={"username": config.AUTH_USER, "password": config.AUTH_PASSWORD})
-    auth._fails.clear()
-    assert r.status_code == 429
+def test_khoa_sau_nhieu_lan_sai(clean_db, monkeypatch):
+    c, sai = TestClient(app), {"username": "x", "password": "y"}
+    clock = [1000.0]
+    monkeypatch.setattr(auth.time, "time", lambda: clock[0])
+    for i in range(1, auth.MAX_FAILS):  # 4 lần đầu: 401 kèm số lần đã sai
+        r = c.post("/api/auth/login", json=sai)
+        assert r.status_code == 401 and r.json()["detail"]["fails"] == i
+        clock[0] += 60
+    r = c.post("/api/auth/login", json=sai)  # lần thứ 5: khóa ngay, đủ 5 phút tính từ lúc này
+    assert r.status_code == 429 and r.json()["detail"]["retry_after"] == auth.LOCK_S
+    clock[0] += auth.LOCK_S - 1  # các lần sai cũ đã quá 5 phút nhưng khóa vẫn còn: đúng mật khẩu cũng bị chặn
+    dung = {"username": config.AUTH_USER, "password": config.AUTH_PASSWORD}
+    assert c.post("/api/auth/login", json=dung).json()["detail"]["retry_after"] == 1
+    clock[0] += 1
+    assert c.post("/api/auth/login", json=dung).status_code == 200
+    auth._fails.clear(); auth._locked.clear()

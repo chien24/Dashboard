@@ -7,7 +7,11 @@ async function request(method, path, body) {
   else if (body !== undefined) { opt.body = JSON.stringify(body); opt.headers["Content-Type"] = "application/json"; }
   const res = await fetch(BASE_URL + path, opt);
   const data = await res.json().catch(() => null);
-  if (!res.ok) throw Object.assign(new Error((data && (typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail))) || res.statusText), { status: res.status });
+  if (!res.ok) {
+    const d = data && data.detail;  // chuỗi, hoặc object {message, ...} (vd đăng nhập sai: fails / retry_after)
+    const msg = typeof d === "string" ? d : (d && d.message) || (d && JSON.stringify(d)) || res.statusText;
+    throw Object.assign(new Error(msg), { status: res.status, detail: d });
+  }
   return data;
 }
 
@@ -101,11 +105,55 @@ const LOGIN_DLG = `<dialog class="login-dlg" id="login-dlg" aria-labelledby="log
     <h2 id="login-h">Đăng nhập</h2>
     <label>Tài khoản<input name="username" autocomplete="username" required></label>
     <label>Mật khẩu<input name="password" type="password" autocomplete="current-password" required></label>
-    <p class="err" id="login-err" role="alert"></p>
+    <div role="alert"><p class="err" id="login-err"></p><p class="login-hint" id="login-hint"></p></div>
     <div class="login-actions"><button class="btn" type="button" id="login-cancel">Hủy</button>
       <button class="btn primary" type="submit">Đăng nhập</button></div>
   </form>
 </dialog>`;
+const LOGIN_FAIL = "Tư chất quá kém, tiên duyên chưa đủ, mời ngươi quay về đi!";
+/** Câu phụ theo số lần đã sai (server đếm): lần 1 và lần áp chót mới có. */
+function failHint(fails, max) {
+  if (fails === 1) return `Nghịch thiên cải mệnh? Ta cho ngươi ${max - 1} lần giãy giụa nữa!`;
+  if (fails === max - 1) return "Thiên uy khó phạm, ngươi chỉ còn duy nhất một lần cuối!";
+  return "";
+}
+/** Sai quá số lần: nhốt ở trang phong ấn tới khi hết khóa (server báo số giây còn lại). */
+function goJail(seconds) {
+  const until = Date.now() + (seconds || 300) * 1000;
+  try { localStorage.setItem("jail_until", until); } catch (e) {}
+  location.replace("jail.html?until=" + until);
+}
+
+/** Thông báo nổi góc phải dưới (dùng chung mọi trang). kind: ok | warn | fail. Lỗi giữ tới khi đóng, còn lại tự ẩn sau 8s. */
+function toast(kind, html) {
+  let box = document.getElementById("toasts");
+  if (!box) {
+    box = Object.assign(document.createElement("div"), { id: "toasts" });
+    box.setAttribute("aria-live", "polite");
+    document.body.append(box);
+  }
+  const t = document.createElement("div");
+  t.className = "toast " + kind;
+  t.setAttribute("role", kind === "fail" ? "alert" : "status");
+  t.innerHTML = `<div>${html}</div><button type="button" aria-label="Đóng thông báo">×</button>`;
+  t.querySelector("button").onclick = () => t.remove();
+  box.append(t);
+  while (box.children.length > 4) box.firstElementChild.remove();
+  if (kind !== "fail") setTimeout(() => t.remove(), 8000);
+}
+/** Đăng nhập / đăng xuất xong phải reload để tải lại dữ liệu: giữ thông báo qua lần reload rồi mới hiện. */
+function reloadWithToast(kind, text) {
+  try { sessionStorage.setItem("flash", JSON.stringify([kind, text])); } catch (e) {}
+  location.reload();
+}
+function showFlash() {
+  try {
+    const f = JSON.parse(sessionStorage.getItem("flash") || "null");
+    sessionStorage.removeItem("flash");
+    if (f) toast(f[0], escHtml(f[1]));
+  } catch (e) {}
+}
+
 async function initAuth() {
   const theme = document.getElementById("theme-btn");
   if (!theme) return;
@@ -113,19 +161,28 @@ async function initAuth() {
   theme.before(btn);
   if (await api.authed) {
     btn.textContent = "Đăng xuất";
-    btn.onclick = async () => { await api.logout().catch(() => {}); location.reload(); };
+    btn.onclick = async () => { await api.logout().catch(() => {}); reloadWithToast("ok", "Đã đăng xuất."); };
     return;
   }
   btn.textContent = "Đăng nhập";
   document.body.insertAdjacentHTML("beforeend", LOGIN_DLG);
-  const dlg = document.getElementById("login-dlg"), form = document.getElementById("login-form"), err = document.getElementById("login-err");
-  btn.onclick = () => { err.textContent = ""; dlg.showModal(); };
+  const dlg = document.getElementById("login-dlg"), form = document.getElementById("login-form");
+  const err = document.getElementById("login-err"), hint = document.getElementById("login-hint");
+  const say = (a, b = "") => { err.textContent = a; hint.textContent = b; };
+  btn.onclick = () => { say(""); dlg.showModal(); };
   document.getElementById("login-cancel").onclick = () => dlg.close();
   form.addEventListener("submit", async e => {
     e.preventDefault();
-    err.textContent = "";
-    try { await api.login(form.username.value.trim(), form.password.value); location.reload(); }
-    catch (x) { err.textContent = x.message; form.password.select(); }
+    say("");
+    try {
+      await api.login(form.username.value.trim(), form.password.value);
+      reloadWithToast("ok", "Đăng nhập thành công.");
+    } catch (x) {
+      if (x.status === 429) return goJail(x.detail && x.detail.retry_after);
+      if (x.status === 401 && x.detail && x.detail.fails) say(LOGIN_FAIL, failHint(x.detail.fails, x.detail.max_fails));
+      else say(x.message);  // lỗi mạng / server
+      form.password.select();
+    }
   });
 }
 
@@ -183,6 +240,10 @@ function showWelcome() {
   document.body.insertAdjacentHTML("beforeend", WELCOME);
   const dlg = document.getElementById("welcome-dlg");
   dlg.querySelectorAll("[data-close]").forEach(b => b.onclick = () => dlg.close());
+  dlg.querySelector(".welcome-go").onclick = async () => {  // "Bắt đầu ngay": chưa đăng nhập thì mở luôn hộp đăng nhập
+    dlg.close();
+    if (!await api.authed) document.querySelector(".auth-btn")?.click();
+  };
   dlg.addEventListener("click", e => { if (e.target === dlg) dlg.close(); });  // bấm ra nền tối thì đóng
   dlg.addEventListener("close", () => dlg.remove());
   dlg.showModal();
@@ -193,6 +254,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.body.insertAdjacentHTML("beforeend", FOOTER);
   initAuth();
   showWelcome();
+  showFlash();
   document.getElementById("to-top").addEventListener("click", () =>
     scrollTo({ top: 0, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }));
   document.getElementById("theme-btn")?.addEventListener("click", () => {
