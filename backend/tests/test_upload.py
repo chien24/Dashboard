@@ -71,3 +71,43 @@ def test_hai_request_cung_luc_cung_anh(clean_db, monkeypatch):
 def test_header_bao_mat():
     h = c.get("/html/index.html").headers
     assert h["x-content-type-options"] == "nosniff" and h["x-frame-options"] == "DENY" and h["cache-control"] == "no-cache"
+
+
+def _report(upload_id: int) -> int:
+    from datetime import date
+
+    from app.db import SessionLocal
+    from app.models import Report
+    with SessionLocal() as db:
+        r = Report(upload_id=upload_id, loai="dmwcs_capacity", report_date=date(2026, 11, 16), data={})
+        db.add(r)
+        db.commit()
+        return r.id
+
+
+def test_xoa_report_cuoi_cung_thi_xoa_anh(clean_db):
+    """Xóa report rồi tải lại đúng ảnh đó: là ảnh mới (không báo trùng trỏ vào report đã xóa)."""
+    from app.db import SessionLocal
+    from app.models import Job, Upload
+    a = post("a.png", png()).json()[0]
+    with SessionLocal() as db:  # job chạy xong (test không chạy worker)
+        db.get(Job, a["job_id"]).status = "done"
+        db.commit()
+        path = config.UPLOAD_DIR / db.get(Upload, a["upload_id"]).stored_path
+    r1, r2 = _report(a["upload_id"]), _report(a["upload_id"])  # r2 = lần OCR lại
+
+    assert c.delete(f"/api/reports/{r2}").json() == {"deleted": r2, "upload_deleted": False}  # còn r1
+    b = post("a.png", png()).json()[0]
+    assert b["duplicate"] and b["report_id"] == r1
+
+    assert c.delete(f"/api/reports/{r1}").json()["upload_deleted"]
+    assert not path.exists()
+    with SessionLocal() as db:
+        assert db.get(Upload, a["upload_id"]) is None and db.get(Job, a["job_id"]) is None
+    assert not post("a.png", png()).json()[0]["duplicate"]
+
+
+def test_xoa_report_khi_anh_dang_ocr_lai_thi_giu_anh(clean_db):
+    a = post("a.png", png()).json()[0]  # job đang pending
+    r = _report(a["upload_id"])
+    assert not c.delete(f"/api/reports/{r}").json()["upload_deleted"]

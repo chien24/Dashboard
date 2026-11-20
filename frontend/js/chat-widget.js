@@ -69,7 +69,12 @@
       input.value = "";
       const wait = add("bot busy", "Đang truy vấn…");
       try {
-        const r = await api.chat(text, convId());
+        // hội thoại cũ đã bị xóa theo hạn lưu trữ: bắt đầu hội thoại mới
+        const r = await api.chat(text, convId()).catch(e => {
+          if (e.status !== 404) throw e;
+          try { localStorage.removeItem(CONV_KEY); } catch (x) {}
+          return api.chat(text, null);
+        });
         try { localStorage.setItem(CONV_KEY, r.conversation_id); } catch (e) {}
         const warns = (r.warnings || []).map(w => `<li>${escHtml(w)}</li>`).join("");
         const choices = (r.lua_chon || []).map(c => `<button class="btn" type="button" data-cw="${escHtml(c)}">${escHtml(c)}</button>`).join("");

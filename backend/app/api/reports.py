@@ -8,7 +8,7 @@ from sqlalchemy import func, select, update
 from app import config
 from app.api.upload import new_job
 from app.db import get_db
-from app.models import DmwcsBcr, DmwcsCapacityDaily, DmwcsSorted, Report, ScadaSummary, now
+from app.models import DmwcsBcr, DmwcsCapacityDaily, DmwcsSorted, Job, Report, ScadaSummary, now
 from app.ocr.providers.base import BadOutput, validate_output
 from app.schemas import SCHEMAS
 from app.services.ingest import write_details
@@ -121,9 +121,21 @@ def edit_report(rid: int, data: dict = Body(...), updated_at: datetime | None = 
 
 @router.delete("/{rid}")
 def delete_report(rid: int, db=Depends(get_db)):
-    db.delete(get_or_404(db, rid))  # ON DELETE CASCADE xóa dòng chi tiết
+    """Ảnh không còn report nào (và không có job đang chờ/chạy) thì xóa luôn ảnh + job: tải lại đúng ảnh đó
+    là ảnh mới, không bị báo trùng rồi trỏ vào report đã xóa."""
+    rep = get_or_404(db, rid)
+    up = rep.upload
+    db.delete(rep)  # ON DELETE CASCADE xóa dòng chi tiết
+    db.flush()
+    path = None
+    if up and not db.scalar(select(func.count()).where(Report.upload_id == up.id)) and not db.scalar(
+            select(func.count()).select_from(Job).where(Job.upload_id == up.id, Job.status.in_(("pending", "running")))):
+        path = Path(up.stored_path)
+        db.delete(up)  # ON DELETE CASCADE xóa job của ảnh
     db.commit()
-    return {"deleted": rid}
+    if path:  # xóa file sau khi commit: commit lỗi thì ảnh vẫn còn
+        path.unlink(missing_ok=True)
+    return {"deleted": rid, "upload_deleted": bool(path)}
 
 
 @router.post("/{rid}/reocr")
