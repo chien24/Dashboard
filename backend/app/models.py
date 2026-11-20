@@ -159,3 +159,52 @@ class ModelStatus(Base):
     last_error: Mapped[str | None] = mapped_column(Text)
     fail_count: Mapped[int] = mapped_column(Integer, default=0)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=now, onupdate=now)
+
+
+# ---------------------------------------------------------------- chatbot (request/DAC_TA_CHATBOT.md mục 10)
+class ChatConversation(Base):
+    __tablename__ = "chat_conversations"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user: Mapped[str | None] = mapped_column(String)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=now, onupdate=now, index=True)
+
+
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    conversation_id: Mapped[int] = fk("chat_conversations")
+    role: Mapped[str] = mapped_column(String)  # user / assistant
+    content: Mapped[str] = mapped_column(Text)
+    loai: Mapped[str | None] = mapped_column(String)  # sql / hoi_lai / ngoai_pham_vi / loi
+    sql: Mapped[str | None] = mapped_column(Text)
+    result_preview: Mapped[dict | None] = mapped_column(JSON)  # columns, rows (≤ 50), row_count, truncated, lua_chon
+    warnings: Mapped[list | None] = mapped_column(JSON)
+    model_sql: Mapped[str | None] = mapped_column(String)
+    model_summary: Mapped[str | None] = mapped_column(String)
+    llm_calls: Mapped[int | None]
+    latency_ms: Mapped[int | None]
+    error: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now, index=True)
+
+
+class ChatFeedback(Base):
+    __tablename__ = "chat_feedback"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    message_id: Mapped[int] = fk("chat_messages")
+    rating: Mapped[str] = mapped_column(String)  # up / down
+    note: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+
+
+class ChatTokenUsage(Base):
+    """Token đã dùng theo ngày + provider + model (free tier Groq giới hạn token/phút và /ngày cho từng model)."""
+    __tablename__ = "chat_token_usage"
+    __table_args__ = (UniqueConstraint("ngay", "provider", "model"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    ngay: Mapped[date] = mapped_column(Date, index=True)
+    provider: Mapped[str] = mapped_column(String)
+    model: Mapped[str] = mapped_column(String)
+    requests: Mapped[int] = mapped_column(Integer, default=0)
+    prompt_tokens: Mapped[int] = mapped_column(Integer, default=0)
+    completion_tokens: Mapped[int] = mapped_column(Integer, default=0)

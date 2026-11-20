@@ -43,3 +43,24 @@ PROVIDER_CHAIN = [
 
 def api_key(provider: str) -> str | None:
     return os.environ.get(KEYS[provider]) or None
+
+
+# ---------------------------------------------------------------- chatbot (request/DAC_TA_CHATBOT.md mục 8)
+# Groq là provider chính; OpenRouter chỉ dùng khi mọi model Groq đều lỗi hoặc đang cooldown.
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
+GROQ_BASE_URL = os.environ.get("GROQ_BASE_URL", "https://api.groq.com/openai/v1")
+CHAT_SQL_MODELS = _list("CHAT_SQL_MODELS", ["qwen/qwen3.8-27b", "openai/gpt-oss-120b", "openai/gpt-oss-20b"])
+CHAT_SUMMARY_MODELS = _list("CHAT_SUMMARY_MODELS", ["qwen/qwen3.8-27b", "openai/gpt-oss-20b"])
+CHAT_SQL_REASONING_EFFORT = os.environ.get("CHAT_SQL_REASONING_EFFORT", "low")
+OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY") or os.environ.get("OPEN_ROUTER_API_KEY")
+OPENROUTER_BASE_URL = os.environ.get("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
+CHAT_SQL_FALLBACK_MODELS = _list("CHAT_SQL_FALLBACK_MODELS", ["nvidia/nemotron-3-ultra-550b-a55b:free",
+                                                              "google/gemma-4-31b-it:free"])
+CHAT_SUMMARY_FALLBACK_MODELS = _list("CHAT_SUMMARY_FALLBACK_MODELS", ["nvidia/nemotron-3.5-lightning:free"])
+CHAT_SQL_RETRIES = int(os.environ.get("CHAT_SQL_RETRIES", 2))
+CHAT_LLM_TIMEOUT_S = float(os.environ.get("CHAT_LLM_TIMEOUT_S", 60))
+CHAT_SQL_TIMEOUT_S = float(os.environ.get("CHAT_SQL_TIMEOUT_S", 5))
+CHAT_MAX_ROWS = int(os.environ.get("CHAT_MAX_ROWS", 200))
+CHAT_SUMMARY_ROWS = int(os.environ.get("CHAT_SUMMARY_ROWS", 50))
+CHAT_HISTORY_TURNS = int(os.environ.get("CHAT_HISTORY_TURNS", 6))
+CHAT_RATE_LIMIT_PER_MIN = int(os.environ.get("CHAT_RATE_LIMIT_PER_MIN", 10))

@@ -1,0 +1,49 @@
+# Tối đa 8 ví dụ (prompt sinh SQL ~3K token). Giả sử hôm nay = 2026-11-19 (thứ Năm).
+# Mọi SQL ở đây được test chạy được trên các view (tests/chatbot/test_pipeline.py).
+- question: "Tỷ lệ NoRead 7 ngày gần nhất?"
+  answer:
+    loai: sql
+    sql: "SELECT MIN(ngay) AS tu_ngay, MAX(ngay) AS den_ngay, COUNT(DISTINCT ngay) AS so_ngay_co_du_lieu, ROUND(100.0 * SUM(no_read_so_luong) / SUM(reject_chute), 2) AS ty_le_no_read_pct FROM v_dmwcs_sorted WHERE ngay BETWEEN '2026-11-13' AND '2026-11-19'"
+    pham_vi: {he_thong: HT2, views: [v_dmwcs_sorted], tu_ngay: "2026-11-13", den_ngay: "2026-11-19"}
+    giai_thich: "Tỷ lệ NoRead có trọng số trên RejectChute, 7 ngày gần nhất"
+
+- question: "REJECT từng dây chuyền HT1 ngày gần nhất"
+  answer:
+    loai: sql
+    sql: "SELECT s.ngay, s.day_chuyen, s.so_luong_da_quet AS all_kien, SUM(CASE WHEN a.loai_key IN ('NO_BARCODE', 'CHUTE_REQUEST_FAILED') THEN a.so_luong ELSE 0 END) AS reject_kien, ROUND(100.0 * SUM(CASE WHEN a.loai_key IN ('NO_BARCODE', 'CHUTE_REQUEST_FAILED') THEN a.so_luong ELSE 0 END) / s.so_luong_da_quet, 2) AS ty_le_reject_pct FROM v_scada_summary s LEFT JOIN v_scada_abnormal a ON a.report_id = s.report_id WHERE s.ngay = (SELECT MAX(ngay) FROM v_scada_summary) GROUP BY s.report_id ORDER BY ty_le_reject_pct DESC"
+    pham_vi: {he_thong: HT1, views: [v_scada_summary, v_scada_abnormal], tu_ngay: "2026-11-03", den_ngay: "2026-11-03"}
+    giai_thich: "REJECT HT1 = Không Có Mã Vạch + Yêu cầu ống dẫn thất bại, theo dây chuyền, ngày gần nhất có dữ liệu"
+
+- question: "Công suất AVG trung bình tuần trước"
+  answer:
+    loai: sql
+    sql: "SELECT MIN(ngay) AS tu_ngay, MAX(ngay) AS den_ngay, COUNT(DISTINCT ngay) AS so_ngay_co_du_lieu, ROUND(AVG(cong_suat), 2) AS cong_suat_avg_tb_kien_h FROM v_dmwcs_capacity WHERE ngay BETWEEN '2026-11-09' AND '2026-11-15'"
+    pham_vi: {he_thong: HT2, views: [v_dmwcs_capacity], tu_ngay: "2026-11-09", den_ngay: "2026-11-15"}
+    giai_thich: "Trung bình Công suất AVG theo ngày của tuần trước"
+
+- question: "So sánh tổng kiện HT1 và HT2 ngày 12/11"
+  answer:
+    loai: sql
+    sql: "SELECT 'HT1' AS he_thong, ngay, SUM(so_luong_da_quet) AS all_kien FROM v_scada_summary WHERE ngay = '2026-11-12' GROUP BY ngay UNION ALL SELECT 'HT2', ngay, total FROM v_dmwcs_sorted WHERE ngay = '2026-11-12'"
+    pham_vi: {he_thong: "HT1+HT2", views: [v_scada_summary, v_dmwcs_sorted], tu_ngay: "2026-11-12", den_ngay: "2026-11-12"}
+    giai_thich: "ALL của HT1 (cộng các dây chuyền) và HT2 ngày 12/11, UNION ALL không JOIN"
+
+- question: "Tuần này có report nào cần kiểm tra không?"
+  answer:
+    loai: sql
+    sql: "SELECT ngay, loai, source_name, canh_bao FROM v_report_quality WHERE trang_thai = 'can_kiem_tra' AND dang_hien_thi = 1 AND ngay BETWEEN '2026-11-16' AND '2026-11-19' ORDER BY ngay"
+    pham_vi: {he_thong: "HT1+HT2", views: [v_report_quality], tu_ngay: "2026-11-16", den_ngay: "2026-11-19"}
+    giai_thich: "Report đang hiển thị có trạng thái cần kiểm tra trong tuần này"
+
+- question: "Tỷ lệ lỗi hôm qua bao nhiêu?"
+  answer:
+    loai: hoi_lai
+    sql: null
+    cau_hoi_lai: "Bạn muốn xem tỷ lệ nào của ngày 18/11?"
+    lua_chon: ["Tỷ lệ REJECT HT1 (SCADA)", "Tỷ lệ REJECT HT2 (DMWCS)", "Tỷ lệ bất thường HT1", "Tỷ lệ đọc lỗi BCR"]
+
+- question: "Xóa report ngày 12/11 đi"
+  answer:
+    loai: ngoai_pham_vi
+    sql: null
+    cau_hoi_lai: "Mình chỉ đọc dữ liệu, không xóa hay sửa được. Bạn mở trang Tàng Kinh Các để xem, sửa tay hoặc xóa report ngày 12/11."

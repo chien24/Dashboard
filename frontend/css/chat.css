@@ -1,0 +1,34 @@
+/* Trang hỏi đáp dữ liệu: người dùng bên phải, bot bên trái, ô nhập dưới cùng. */
+.chat-main { max-width: 960px; display: flex; flex-direction: column; gap: 12px; }
+.chat-head { display: flex; justify-content: space-between; align-items: start; gap: 16px; flex-wrap: wrap; }
+.chat-log { display: flex; flex-direction: column; gap: 12px; min-height: 160px; }
+.msg { max-width: min(760px, 100%); padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); box-shadow: var(--shadow); min-width: 0; }
+.msg p { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+.msg.user { align-self: flex-end; background: color-mix(in srgb, var(--accent) 10%, var(--surface)); border-color: color-mix(in srgb, var(--accent) 30%, transparent); }
+.msg.bot { align-self: flex-start; width: min(760px, 100%); }
+.msg.busy .answer { color: var(--muted); }
+.answer.muted { color: var(--muted); }
+.chat-warn { margin: 10px 0 0; padding: 8px 12px 8px 28px; border-radius: 8px; font-size: 13px;
+  background: color-mix(in srgb, var(--warn) 20%, transparent); color: var(--ink); }
+.chat-warn li + li { margin-top: 2px; }
+.choices { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.chat-tbl { margin-top: 10px; max-height: 360px; overflow: auto; border: 1px solid var(--border); border-radius: 8px; }
+.chat-tbl th { text-align: right; }
+.chat-tbl th:first-child { text-align: left; }
+.msg details.sql { margin: 10px 0 0; box-shadow: none; border-radius: 8px; }
+.msg details.sql summary { padding: 6px 10px; font-size: 13px; }
+.msg details.sql pre { margin: 0; padding: 0 10px 10px; overflow-x: auto; font-size: 12px; line-height: 1.45; }
+.msg .meta { margin-top: 8px; font-size: 12px; color: var(--muted); }
+.samples .sample-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.btn.sample { font-weight: 500; text-align: left; }
+.composer { position: sticky; bottom: 8px; display: flex; gap: 8px; align-items: end; padding: 10px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); }
+.composer textarea { flex: 1; min-width: 0; resize: vertical; min-height: 44px; max-height: 200px; font: inherit; color: var(--ink);
+  background: var(--surface); border: 1px solid var(--axis); border-radius: 8px; padding: 8px 10px; }
+.composer-actions { display: flex; gap: 8px; }
+.composer-hint { margin: -4px 0 0; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+@media (max-width: 560px) {
+  .composer { flex-direction: column; align-items: stretch; }
+  .composer-actions { justify-content: flex-end; }
+}

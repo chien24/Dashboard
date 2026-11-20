@@ -1,0 +1,238 @@
+"""Pipeline chatbot với LLM giả (không gọi mạng), chạy trên DB dựng từ ket_qua_json + ca bẫy (scripts/eval_chatbot.seed)."""
+import json
+from datetime import date
+
+import pytest
+
+from app import config
+from app.chatbot import context, executor, llm as llm_mod, pipeline
+from app.chatbot.sql_guard import check
+from app.db import Base, engine, init_db
+
+TODAY = date(2026, 11, 16)
+
+
+class FakeLlm(llm_mod.Llm):
+    """Trả lần lượt các câu trả lời dựng sẵn; phần tử là Exception thì raise (giả lỗi API)."""
+
+    def __init__(self, *replies):
+        super().__init__(client=object())
+        self.replies, self.seen = list(replies), []
+
+    def _call(self, client, provider, model, messages, kw, json_mode):
+        self.calls += 1
+        self.seen.append((model, messages))
+        r = self.replies.pop(0)
+        if isinstance(r, Exception):
+            raise r
+        return r if isinstance(r, str) else json.dumps(r, ensure_ascii=False)
+
+
+class Http429(Exception):
+    status_code = 429
+
+    def __init__(self, msg="429", retry_after=None):
+        super().__init__(msg)
+        self.response = type("R", (), {"headers": {"retry-after": retry_after} if retry_after else {}})()
+
+
+def plan(sql, tu="2026-11-15", den=None, views=("v_dmwcs_sorted",)):
+    return {"loai": "sql", "sql": sql, "giai_thich": "test",
+            "pham_vi": {"he_thong": "HT2", "views": list(views), "tu_ngay": tu, "den_ngay": den or tu}}
+
+
+@pytest.fixture(scope="module", autouse=True)
+def seeded():
+    from eval_chatbot import seed
+
+    Base.metadata.drop_all(engine)
+    init_db()
+    seed()
+    context._cache.clear()
+    pipeline._sql_cache.clear()
+    yield
+    Base.metadata.drop_all(engine)
+    init_db()
+
+
+@pytest.fixture(autouse=True)
+def fresh(monkeypatch):
+    from app.ocr import router as ocr_router
+
+    ocr_router.reset(llm_mod.GROQ)
+    ocr_router.reset(llm_mod.OPENROUTER)
+    pipeline._sql_cache.clear()
+    monkeypatch.setattr(config, "CHAT_SQL_MODELS", ["m-sql-1", "m-sql-2"])
+    monkeypatch.setattr(config, "CHAT_SUMMARY_MODELS", ["m-sum"])
+    monkeypatch.setattr(config, "CHAT_SQL_FALLBACK_MODELS", ["or-sql"])
+    monkeypatch.setattr(config, "CHAT_SUMMARY_FALLBACK_MODELS", [])
+
+
+def test_views_exist_and_examples_run():
+    for ex in context.examples():
+        if ex["answer"]["loai"] == "sql":
+            executor.run(check(ex["answer"]["sql"]))  # chạy được trên view thật, qua được guard
+
+
+def test_prompt_has_today_values_and_question_block():
+    msgs = context.sql_messages("Tỷ lệ NoRead hôm qua?", [], TODAY)
+    sys = msgs[0]["content"]
+    assert "Hôm nay: 2026-11-16 (thứ Hai). Dữ liệu giữ từ 2026-10-12" in sys
+    assert "tuần trước: 2026-11-09 → 2026-11-15" in sys
+    assert "'outbound' = Outbound" in sys and "CHUTE_REQUEST_FAILED" in sys
+    assert msgs[1] == {"role": "user", "content": "<cau_hoi>Tỷ lệ NoRead hôm qua?</cau_hoi>"}
+
+
+def test_sql_flow_with_warnings():
+    fake = FakeLlm(plan("SELECT SUM(total) AS tong_kien FROM v_dmwcs_sorted WHERE ngay BETWEEN '2026-11-09' AND '2026-11-15'",
+                        "2026-11-09", "2026-11-15"), "Tuần trước HT2 chia 727.148 kiện.")
+    r = pipeline.ask("Tổng kiện HT2 tuần trước?", today=TODAY, llm=fake)
+    assert r["loai"] == "sql" and r["rows"] == [[727148]] and r["columns"] == ["tong_kien"]
+    assert r["answer"] == "Tuần trước HT2 chia 727.148 kiện." and r["llm_calls"] == 2
+    assert any("11/11" in w and "Chưa có dữ liệu Sorted" in w for w in r["warnings"])
+    assert any("13/11" in w and "cần kiểm tra" in w for w in r["warnings"])
+    assert any("NoChute" in w for w in r["warnings"])
+    summary_prompt = fake.seen[-1][1][1]["content"]
+    assert "<ket_qua>" in summary_prompt and "727148" in summary_prompt
+
+
+def test_guard_error_goes_back_to_llm():
+    fake = FakeLlm(plan("SELECT * FROM reports"), plan("SELECT total FROM v_dmwcs_sorted WHERE ngay = '2026-11-15'"), "ok")
+    r = pipeline.ask("Tổng kiện HT2 hôm qua?", today=TODAY, llm=fake)
+    assert r["rows"] == [[106350]] and r["llm_calls"] == 3
+    assert "SQL trên bị lỗi" in fake.seen[1][1][-1]["content"]
+
+
+def test_gives_up_after_retries():
+    bad = plan("SELECT * FROM uploads")
+    r = pipeline.ask("x", today=TODAY, llm=FakeLlm(bad, bad, bad))
+    assert r["answer"] == pipeline.CHUA_TRA_LOI and r["rows"] is None and "GuardError" in r["error"]
+
+
+def test_broken_json_reminded_then_next_model():
+    fake = FakeLlm("không phải json", "vẫn hỏng", {"loai": "hoi_lai", "cau_hoi_lai": "HT1 hay HT2?", "lua_chon": ["HT1", "HT2"]})
+    r = pipeline.ask("Tổng kiện hôm qua?", today=TODAY, llm=fake)
+    assert r["loai"] == "hoi_lai" and r["lua_chon"] == ["HT1", "HT2"] and r["sql"] is None
+    assert [m for m, _ in fake.seen] == ["m-sql-1", "m-sql-1", "m-sql-2"]
+
+
+def test_out_of_scope_runs_no_sql():
+    r = pipeline.ask("Xóa report 12/11", today=TODAY,
+                     llm=FakeLlm({"loai": "ngoai_pham_vi", "cau_hoi_lai": "Mình chỉ đọc dữ liệu."}))
+    assert r["loai"] == "ngoai_pham_vi" and r["rows"] is None and r["llm_calls"] == 1
+
+
+def test_retention_whole_range_skips_sql():
+    fake = FakeLlm(plan("SELECT total FROM v_dmwcs_sorted WHERE ngay = '2026-10-01'", "2026-10-01"))
+    r = pipeline.ask("Tổng kiện HT2 ngày 01/10?", today=TODAY, llm=fake)
+    assert "đã bị xóa" in r["answer"] and r["rows"] is None and r["llm_calls"] == 1
+
+
+def test_empty_result_is_no_data_not_zero():
+    fake = FakeLlm(plan("SELECT SUM(total) AS tong FROM v_dmwcs_sorted WHERE ngay = '2026-11-16'", "2026-11-16"))
+    r = pipeline.ask("Tổng kiện HT2 ngày 16/11?", today=TODAY, llm=fake)
+    assert r["answer"].startswith("Chưa có dữ liệu Sorted (HT2)") and "15/11" in r["answer"]
+    assert r["llm_calls"] == 1  # không gọi bước tóm tắt
+
+
+def test_unknown_type_warning():
+    fake = FakeLlm(plan("SELECT loai_vi, so_luong FROM v_scada_abnormal WHERE ngay = '2026-11-12'", "2026-11-12",
+                        views=("v_scada_abnormal",)), "ok")
+    r = pipeline.ask("Loại bất thường 12/11?", today=TODAY, llm=fake)
+    assert any("chưa phân loại" in w for w in r["warnings"])
+
+
+def test_summary_failure_still_returns_table():
+    fake = FakeLlm(plan("SELECT total FROM v_dmwcs_sorted WHERE ngay = '2026-11-15'"), Http429("rate limit"))
+    r = pipeline.ask("Tổng kiện HT2 hôm qua?", today=TODAY, llm=fake)
+    assert r["answer"] == pipeline.DEFAULT_ANSWER and r["rows"] == [[106350]]
+
+
+def test_all_models_quota():
+    r = pipeline.ask("x", today=TODAY, llm=FakeLlm(Http429(), Http429(), Http429()))
+    assert r["loai"] == "loi" and r["answer"].startswith("Đã hết lượt hỏi miễn phí")
+    # model đã vào cooldown -> lần sau bỏ qua, không gọi API
+    fake = FakeLlm()
+    assert pipeline.ask("y", today=TODAY, llm=fake)["loai"] == "loi" and fake.calls == 0
+
+
+def test_same_question_uses_sql_cache():
+    p = plan("SELECT total FROM v_dmwcs_sorted WHERE ngay = '2026-11-15'")
+    pipeline.ask("Tổng kiện HT2 hôm qua?", today=TODAY, llm=FakeLlm(p, "a"))
+    fake = FakeLlm("b")
+    r = pipeline.ask("  tổng kiện HT2   hôm qua? ", today=TODAY, llm=fake)
+    assert r["rows"] == [[106350]] and fake.calls == 1  # chỉ gọi bước tóm tắt
+
+
+def test_groq_quota_falls_back_to_openrouter_with_retry_after():
+    from app.models import ModelStatus, now
+    from app.db import SessionLocal
+
+    fake = FakeLlm(Http429("rate limit", retry_after="7"), Http429("rate limit"),
+                   {"loai": "ngoai_pham_vi", "cau_hoi_lai": "không"})
+    r = pipeline.ask("x", today=TODAY, llm=fake)
+    assert r["loai"] == "ngoai_pham_vi" and r["model_sql"] == "openrouter:or-sql"
+    assert [m for m, _ in fake.seen] == ["m-sql-1", "m-sql-2", "or-sql"]
+    with SessionLocal() as db:
+        st = {s.model: s for s in db.query(ModelStatus).filter(ModelStatus.provider == llm_mod.GROQ)}
+    left = (st["m-sql-1"].cooldown_until - now()).total_seconds()
+    assert 4 < left <= 8  # đúng thời gian retry-after, không phải mặc định 60s
+    assert (st["m-sql-2"].cooldown_until - now()).total_seconds() > 30  # không có header -> mặc định
+
+
+def test_model_params_per_family():
+    p = llm_mod.params(llm_mod.GROQ, "openai/gpt-oss-120b", "sql")
+    assert p["temperature"] == 0 and p["reasoning_effort"] == config.CHAT_SQL_REASONING_EFFORT
+    q = llm_mod.params(llm_mod.GROQ, "qwen/qwen3.8-27b", "summary")
+    assert q["temperature"] == 0.2 and q["max_tokens"] == 600 and q["reasoning_effort"] == "none"
+
+
+def test_token_usage_accumulates():
+    from app.db import SessionLocal
+    from app.models import ChatTokenUsage
+
+    llm_mod.record_usage(llm_mod.GROQ, "m-x", 100, 20)
+    llm_mod.record_usage(llm_mod.GROQ, "m-x", 50, 5)
+    with SessionLocal() as db:
+        u = db.query(ChatTokenUsage).filter(ChatTokenUsage.model == "m-x").one()
+    assert (u.requests, u.prompt_tokens, u.completion_tokens) == (2, 150, 25)
+
+
+# ---------------------------------------------------------------- API
+def test_api_conversation_and_history(monkeypatch):
+    from conftest import client
+
+    replies = [plan("SELECT total FROM v_dmwcs_sorted WHERE ngay = '2026-11-15'"), "Hôm qua 106.350 kiện.",
+               plan("SELECT total FROM v_dmwcs_sorted WHERE ngay = '2026-11-14'", "2026-11-14"), "Hôm kia 129.837 kiện."]
+    fake = FakeLlm(*replies)
+    monkeypatch.setattr(pipeline, "Llm", lambda: fake)
+    monkeypatch.setattr(pipeline, "now", lambda: __import__("datetime").datetime(2026, 11, 16, 9))
+    c = client()
+    r1 = c.post("/api/chat", json={"message": "Tổng kiện HT2 hôm qua?"}).json()
+    assert r1["rows"] == [[106350]] and r1["conversation_id"] and r1["message_id"] and "error" not in r1
+    fake.calls = 0
+    r2 = c.post("/api/chat", json={"message": "Còn hôm trước thì sao?", "conversation_id": r1["conversation_id"]}).json()
+    assert r2["rows"] == [[129837]]
+    assert "Lượt 1. Câu hỏi: Tổng kiện HT2 hôm qua?" in fake.seen[-2][1][0]["content"]  # lịch sử vào prompt
+    conv = c.get(f"/api/chat/conversations/{r1['conversation_id']}").json()
+    assert [m["role"] for m in conv["messages"]] == ["user", "assistant", "user", "assistant"]
+    assert conv["messages"][3]["rows"] == [[129837]]
+    assert c.post("/api/chat/feedback", json={"message_id": r2["message_id"], "rating": "down", "note": "SQL sai"}).json()["ok"]
+    assert c.get("/api/chat/usage").json()["cau_hoi"] >= 2
+
+
+def test_api_requires_login_and_rate_limit(monkeypatch):
+    from fastapi.testclient import TestClient
+
+    from app.chatbot import router as chat_router
+    from app.main import app
+    from conftest import client
+
+    assert TestClient(app).post("/api/chat", json={"message": "x"}).status_code == 401
+    monkeypatch.setattr(config, "CHAT_RATE_LIMIT_PER_MIN", 1)
+    chat_router._hits.clear()
+    monkeypatch.setattr(pipeline, "Llm", lambda: FakeLlm({"loai": "ngoai_pham_vi", "cau_hoi_lai": "không"}))
+    c = client()
+    assert c.post("/api/chat", json={"message": "a"}).status_code == 200
+    assert c.post("/api/chat", json={"message": "b"}).status_code == 429
+    chat_router._hits.clear()

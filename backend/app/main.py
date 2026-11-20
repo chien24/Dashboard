@@ -12,6 +12,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app import config
 from app.api import auth, dashboard, reports, system, upload
+from app.chatbot import router as chat
 from app.db import SessionLocal, engine, init_db
 from app.ocr.router import reset_provider_disabled_on_start
 from app.services import retention, worker
@@ -43,7 +44,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="OCR Dashboard CNKT3", lifespan=lifespan)
-for r in (auth.router, upload.router, reports.router, dashboard.router, system.router):
+for r in (auth.router, upload.router, reports.router, dashboard.router, system.router, chat.router):
     app.include_router(r)
 PRIVATE = ("/api/", "/uploads/", "/docs", "/redoc", "/openapi.json")  # Swagger cũng cần đăng nhập: lộ sơ đồ API
 PUBLIC = ("/api/auth/", "/api/system/health")

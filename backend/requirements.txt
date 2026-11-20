@@ -10,3 +10,5 @@ openai
 pillow>=13.0
 pytest
 httpx
+sqlglot==30.30.0
+pyyaml

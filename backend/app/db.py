@@ -32,7 +32,14 @@ SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
 
 def init_db(eng=None):
     from app import models  # noqa: F401  đăng ký bảng
-    Base.metadata.create_all(eng or engine)
+    eng = eng or engine
+    Base.metadata.create_all(eng)
+    if eng.dialect.name == "sqlite":  # create_all không tạo view; view của chatbot viết cho SQLite
+        conn = eng.raw_connection()
+        try:
+            conn.executescript((Path(__file__).parent / "chatbot" / "views.sql").read_text(encoding="utf-8"))
+        finally:
+            conn.close()
 
 
 def get_db():

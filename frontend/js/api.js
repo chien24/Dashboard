@@ -1,8 +1,8 @@
 // Mọi request tới backend đi qua đây (đường dẫn tương đối, chạy chung domain với FastAPI).
 const BASE_URL = "/api";
 
-async function request(method, path, body) {
-  const opt = { method, headers: {} };
+async function request(method, path, body, signal) {
+  const opt = { method, headers: {}, signal };
   if (body instanceof FormData) opt.body = body;
   else if (body !== undefined) { opt.body = JSON.stringify(body); opt.headers["Content-Type"] = "application/json"; }
   const res = await fetch(BASE_URL + path, opt);
@@ -45,6 +45,9 @@ const api = {
   saveReport: (id, data, updatedAt) => request("PUT", `/reports/${id}?updated_at=${encodeURIComponent(updatedAt)}`, data),
   reocr: (id, provider, model) => request("POST", `/reports/${id}/reocr`, { provider, model }),
   providers: () => request("GET", "/system/providers"),
+  chat: (message, conversationId, signal) => request("POST", "/chat", { message, conversation_id: conversationId ?? null }, signal),
+  conversation: (id) => request("GET", `/chat/conversations/${id}`),
+  chatUsage: () => request("GET", "/chat/usage"),
 };
 
 const LOAI_TEN = { scada: "SCADA", dmwcs_sorted: "DMWCS Sorted", dmwcs_capacity: "DMWCS Capacity", dmwcs_bcr_rate: "DMWCS BCR rate" };
@@ -90,7 +93,7 @@ const FOOTER = `<footer class="site-foot">
     </div>
     <div class="foot-col">
       <h4>Dẫn Lộ Bàn</h4>
-      <a href="index.html">Thiên Cơ Các</a><a href="upload.html">Truyền Pháp Ảnh</a><a href="history.html">Tàng Kinh Các</a>
+      <a href="index.html">Thiên Cơ Các</a><a href="upload.html">Truyền Pháp Ảnh</a><a href="history.html">Tàng Kinh Các</a><a href="chat.html">Vấn Đạo Đài</a>
     </div>
   </div>
   <div class="foot-bottom">

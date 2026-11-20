@@ -1,0 +1,146 @@
+// Trang hỏi đáp dữ liệu: gửi câu hỏi tới POST /api/chat, hiện câu trả lời + cảnh báo + bảng + SQL.
+const $ = id => document.getElementById(id);
+const log = $("log"), form = $("composer"), input = $("msg"), sendBtn = $("send"), cancelBtn = $("cancel");
+const CONV_KEY = "chat_conversation_id";
+const SAMPLES = [
+  "Hôm qua HT2 sorted tổng bao nhiêu kiện, tỷ lệ REJECT bao nhiêu %?",
+  "Công suất AVG 7 ngày gần nhất thế nào?",
+  "Dây chuyền nào có tỷ lệ bất thường cao nhất tuần này?",
+  "BCR nào có rate thấp nhất hôm qua?",
+  "Máng nào xuất hiện trong NoChute nhiều nhất 2 tuần qua?",
+  "Tuần này có report nào cần kiểm tra không?",
+];
+const MAX_SHOWN = 200;
+let convId = null, pending = null;
+
+const store = {
+  get() { try { return +localStorage.getItem(CONV_KEY) || null; } catch (e) { return null; } },
+  set(v) { try { v ? localStorage.setItem(CONV_KEY, v) : localStorage.removeItem(CONV_KEY); } catch (e) {} },
+};
+const fmtCell = v => v === null || v === undefined ? "—"
+  : typeof v === "number" ? v.toLocaleString("vi-VN", { maximumFractionDigits: 2 }) : String(v);
+
+function bubble(role, html) {
+  const el = document.createElement("article");
+  el.className = "msg " + role;
+  el.innerHTML = html;
+  log.append(el);
+  el.scrollIntoView({ block: "end", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+  return el;
+}
+
+function tableHtml(cols, rows, rowCount, truncated) {
+  if (!cols || !rows || !rows.length) return "";
+  const shown = rows.slice(0, MAX_SHOWN);
+  const head = cols.map(c => `<th>${escHtml(c)}</th>`).join("");
+  const body = shown.map(r => `<tr>${r.map(v => `<td>${escHtml(fmtCell(v))}</td>`).join("")}</tr>`).join("");
+  const note = truncated ? `Đang hiển thị ${shown.length} dòng đầu, kết quả còn nhiều dòng hơn.`
+    : rows.length < rowCount ? `Đang hiển thị ${rows.length}/${rowCount} dòng đã lưu.` : `${rowCount} dòng`;
+  return `<div class="tbl-wrap chat-tbl"><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>
+    <p class="note">${note}</p>`;
+}
+
+function answerHtml(r) {
+  const warns = (r.warnings || []).length
+    ? `<ul class="chat-warn" aria-label="Cảnh báo dữ liệu">${r.warnings.map(w => `<li>${escHtml(w)}</li>`).join("")}</ul>` : "";
+  const choices = (r.lua_chon || []).length
+    ? `<div class="choices">${r.lua_chon.map(c => `<button class="btn" type="button" data-choice="${escHtml(c)}">${escHtml(c)}</button>`).join("")}</div>` : "";
+  const sql = r.sql ? `<details class="sql"><summary>Xem SQL</summary><pre><code>${escHtml(r.sql)}</code></pre></details>` : "";
+  const models = [r.model_sql, r.model_summary].filter(Boolean).join(" · ");
+  const meta = models || r.latency_ms ? `<p class="meta">${escHtml(models)}${r.latency_ms ? ` · ${(r.latency_ms / 1000).toFixed(1)} giây` : ""}</p>` : "";
+  return `<p class="answer${r.loai === "loi" ? " err" : ""}">${escHtml(r.answer || r.content || "")}</p>${warns}${choices}
+    ${tableHtml(r.columns, r.rows, r.row_count, r.truncated)}${sql}${meta}`;
+}
+
+function setBusy(on) {
+  sendBtn.disabled = on;
+  cancelBtn.hidden = !on;
+  input.readOnly = on;
+}
+
+async function ask(text) {
+  text = text.trim();
+  if (!text || pending) return;
+  $("samples").hidden = true;
+  bubble("user", `<p>${escHtml(text)}</p>`);
+  input.value = "";
+  const wait = bubble("bot busy", `<p class="answer">Đang truy vấn…</p>`);
+  pending = new AbortController();
+  setBusy(true);
+  try {
+    const r = await api.chat(text, convId, pending.signal);
+    convId = r.conversation_id;
+    store.set(convId);
+    wait.className = "msg bot";
+    wait.innerHTML = answerHtml(r);
+    loadUsage();
+  } catch (e) {
+    wait.className = "msg bot";
+    if (e.name === "AbortError") wait.innerHTML = `<p class="answer muted">Đã hủy chờ. Câu hỏi vẫn có thể đang chạy ở máy chủ.</p>`;
+    else if (e.status === 401) wait.innerHTML = `<p class="answer err">Bạn cần Nhập Môn (đăng nhập) trước khi hỏi.</p>`;
+    else wait.innerHTML = `<p class="answer err">Không gửi được câu hỏi: ${escHtml(e.message)}</p>`;
+  } finally {
+    pending = null;
+    setBusy(false);
+    input.focus();
+  }
+}
+
+async function restore() {
+  const id = store.get();
+  if (!id) return showSamples();
+  try {
+    const c = await api.conversation(id);
+    convId = c.conversation_id;
+    for (const m of c.messages) {
+      if (m.role === "user") bubble("user", `<p>${escHtml(m.content)}</p>`);
+      else bubble("bot", answerHtml(m));
+    }
+    if (!c.messages.length) showSamples();
+  } catch (e) {
+    store.set(null);  // hội thoại đã bị xóa (retention) hoặc chưa đăng nhập
+    showSamples();
+  }
+}
+
+function showSamples() {
+  $("sample-list").innerHTML = SAMPLES.map(s => `<button class="btn sample" type="button" data-choice="${escHtml(s)}">${escHtml(s)}</button>`).join("");
+  $("samples").hidden = false;
+}
+
+async function loadUsage() {
+  try {
+    const u = await api.chatUsage();
+    $("usage").textContent = `Hôm nay: ${u.cau_hoi} câu hỏi, ${u.llm_calls} lượt gọi model, ${(u.tokens || 0).toLocaleString("vi-VN")} token.`;
+  } catch (e) { $("usage").textContent = ""; }
+}
+
+// ---------------------------------------------------------------- sự kiện
+form.addEventListener("submit", e => { e.preventDefault(); ask(input.value); });
+input.addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); ask(input.value); }
+});
+cancelBtn.onclick = () => pending && pending.abort();
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-choice]");
+  if (b) ask(b.dataset.choice);
+});
+$("new-chat").onclick = () => {
+  if (pending) pending.abort();
+  convId = null;
+  store.set(null);
+  log.innerHTML = "";
+  showSamples();
+  input.focus();
+};
+
+(async () => {
+  if (!await api.authed) {
+    bubble("bot", `<p class="answer">Bạn cần Nhập Môn (nút ở góc trên bên phải) để hỏi đáp dữ liệu.</p>`);
+    setBusy(true);
+    cancelBtn.hidden = true;
+    return;
+  }
+  await restore();
+  loadUsage();
+})();

@@ -14,3 +14,6 @@ __pycache__/
 backend/data/
 *.db
 *.db-*
+
+# kết quả chạy scripts/eval_chatbot.py (có câu trả lời và số liệu)
+backend/eval_results/

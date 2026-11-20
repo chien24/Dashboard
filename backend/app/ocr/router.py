@@ -67,15 +67,16 @@ def cooldown_until(msg: str, fail_count: int) -> datetime:
     return now() + timedelta(seconds=60)
 
 
-def mark(provider: str, model: str, state: str, error: str | None = None):
-    """Ghi trạng thái. state='ok': thành công -> reset fail_count."""
+def mark(provider: str, model: str, state: str, error: str | None = None, until: datetime | None = None):
+    """Ghi trạng thái. state='ok': thành công -> reset fail_count. until: hết cooldown lúc nào (vd từ header retry-after)."""
     with SessionLocal() as db:
         st = _status(db, provider, model)
         if state == "ok":
             st.state, st.fail_count, st.cooldown_until = "active", 0, None
         elif state == "cooldown":
             st.fail_count = (st.fail_count or 0) + 1
-            st.state, st.cooldown_until, st.last_error = "cooldown", cooldown_until(error or "", st.fail_count), error
+            st.state, st.last_error = "cooldown", error
+            st.cooldown_until = until or cooldown_until(error or "", st.fail_count)
         else:
             st.state, st.last_error = state, error
             st.fail_count = (st.fail_count or 0) + 1
