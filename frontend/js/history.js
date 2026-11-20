@@ -107,7 +107,7 @@ function body(r) {
     main = kv([["Dây chuyền (giá trị gốc)", escHtml(d.day_chuyen)], ["Thời gian quét", span(d.thoi_gian_tu, d.thoi_gian_den)],
               ["Số lượng đã quét", fInt(d.so_luong_da_quet)], ["Số lượng gói theo lưới", fInt(d.so_luong_goi_theo_luoi)],
               ["Số lượng bưu kiện bất thường", fInt(d.so_buu_kien_bat_thuong)], ["Tỷ lệ bất thường", fDec(d.ty_le_bat_thuong) + "%"],
-              ["Thời gian quét trung bình", fDec(d.thoi_gian_quet_trung_binh, 4)], ["Công suất cao nhất 1h", fInt(d.cong_suat_cao_nhat_1h)],
+              ["Thời gian quét trung bình", fDec(d.thoi_gian_quet_trung_binh, 4) + " giây"], ["Công suất cao nhất 1h", fInt(d.cong_suat_cao_nhat_1h)],
               ["Khung giờ công suất MAX", span(d.cong_suat_max_tu, d.cong_suat_max_den)]])
       + tbl(["Loại bất thường (hiển thị)", "Nhãn OCR gốc", "Số lượng", "Tỷ lệ"],
             (r.bat_thuong || []).map(p => [escHtml(p.loai_vi), escHtml(p.loai), fInt(p.so_luong), fDec(p.ty_le) + "%"]))
@@ -122,7 +122,7 @@ function body(r) {
       + `<p class="note">Ô trên màn hình DMWCS bị cắt ở mép phải: danh sách chưa đầy đủ, máng cuối có thể thiếu chữ số.</p>`;
   } else if (r.loai === "dmwcs_capacity") {
     main = kv([["Khoảng ngày truy vấn", span(d.tu_ngay, d.den_ngay)],
-               ...(d.cong_suat_theo_ngay || []).map(p => [dmy(p.ngay), fDec(p.cong_suat)])]);
+               ...(d.cong_suat_theo_ngay || []).map(p => [dmy(p.ngay), fDec(p.cong_suat) + " bưu kiện/giờ"])]);
   } else {
     main = kv([["Thời gian", span(d.thoi_gian_tu, d.thoi_gian_den)]])
       + tbl(["Scanner", "", "TOTAL", "SUCCESS", "FAILED", "RATE"],

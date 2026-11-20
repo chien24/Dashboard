@@ -1,7 +1,7 @@
 {
   "_huong_dan": "Thêm/sửa loại bất thường SCADA ở đây, không cần sửa code. 'vi' = tên hiển thị, 'bien_the' = các cách OCR đã đọc. Khi so khớp: bỏ dấu, chữ thường, ký tự '?' khớp với 1 ký tự bất kỳ; không khớp hẳn thì so gần đúng.",
   "NO_SORT_REPORT": {"vi": "Không có Báo cáo Phân loại", "bien_the": ["Không có Báo cáo Phân loại", "Không có Báo cáo Phân lo?i"]},
-  "CHUTE_REQUEST_FAILED": {"vi": "Yêu cầu ống dẫn thất bại (chờ xác nhận tên đúng)", "bien_the": ["Yêu c?u ?ng d?n th?t b?i", "Yêu cầu ?ng đơn th?t b?i", "Yêu cầu ?ng đến thất bại", "Yêu cầu ?ng đ?n th?t b?i"]},
+  "CHUTE_REQUEST_FAILED": {"vi": "Yêu cầu ống dẫn thất bại", "bien_the": ["Yêu c?u ?ng d?n th?t b?i", "Yêu cầu ?ng đơn th?t b?i", "Yêu cầu ?ng đến thất bại", "Yêu cầu ?ng đ?n th?t b?i"]},
   "NO_BARCODE": {"vi": "Không Có Mã Vạch", "bien_the": ["Không Có Mã Vạch"]},
   "CHUTE_LOCK_OVER_LOOP": {"vi": "Khóa Ô Phân Loại Quá Vòng", "bien_the": ["Khóa Ô Phân Loại Quá Vòng", "Khóa Ở Phân Loại Quá Vòng"]},
   "PHYSICAL_DEVICE_ERROR": {"vi": "物理设备异常 (thiết bị vật lý bất thường)", "bien_the": ["物理设备异常"]},

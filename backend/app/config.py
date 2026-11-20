@@ -36,8 +36,7 @@ PROVIDER_CHAIN = [
     {"provider": "nvidia", "models": _list("NVIDIA_MODELS", ["nvidia/nemotron-3.5-parse",
                                                              "nvidia/nemotron-3.5-super-vl-120b-a12b",
                                                               "meta/llama-3.2-90b-vision-instruct"])},
-    {"provider": "openrouter", "models": _list("OPENROUTER_MODELS", ["google/gemma-4-31b-it:free",
-                                                                      "nvidia/nemotron-3.5-super-vl:free",
+    {"provider": "openrouter", "models": _list("OPENROUTER_MODELS", ["nvidia/nemotron-3.5-super-vl:free",
                                                                       "inclusionai/ling-3.2-flash:free"])},
 ]
 

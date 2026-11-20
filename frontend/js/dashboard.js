@@ -25,26 +25,21 @@ const sum = (arr, f) => arr.length ? arr.reduce((s, x) => s + f(x), 0) : null;
 // Chuẩn hoá chịu lỗi font: bỏ dấu, chữ thường, bỏ '?'
 const norm = s => s.replace(/đ/g, "d").replace(/Đ/g, "D").normalize("NFD").replace(/[̀-ͯ]/g, "")
   .toLowerCase().replace(/\?/g, "").replace(/\s+/g, " ").trim();
-// Loại bất thường đã được backend chuẩn hóa (abnormal_types.json): NOREAD = Không Có Mã Vạch, NOPOST = Không có Báo cáo Phân loại
-const DUNG = { NO_BARCODE: "NOREAD", NO_SORT_REPORT: "NOPOST", UNKNOWN: "không nhận ra – bổ sung abnormal_types.json" };
-// Tên dây chuyền: giữ giá trị gốc, chuẩn hoá để lọc và hiển thị. Thứ tự cố định = màu cố định.
-const LINE_ORDER = ["outbound", "inbound", "cbs2-1", "cbs1-2", "cbs1-1", "cbs2-2"];
-const LINE_COLOR = ["var(--s1)", "var(--s2)", "var(--s3)", "var(--s4)", "var(--s5)", "var(--s7)"];
-function lineOf(raw) {
-  const n = norm(raw).replace(/ /g, "");
-  if (n.startsWith("outbound")) return { key: "outbound", ten: "Outbound" };
-  if (n.startsWith("inbound")) return { key: "inbound", ten: "Inbound" };
-  const m = n.match(/^c(?:bs|sb)([12])([12])(?:st|nd)layer/);
-  return m ? { key: `cbs${m[1]}-${m[2]}`, ten: `CBS${m[1]} tầng ${m[2]}` } : { key: n, ten: raw };
-}
+// Loại bất thường đã được backend chuẩn hóa (abnormal_types.json). REJECT HT1 = Không Có Mã Vạch + Yêu cầu ống dẫn thất bại (Q1)
+const DUNG = { NO_BARCODE: "REJECT", CHUTE_REQUEST_FAILED: "REJECT", UNKNOWN: "không nhận ra – bổ sung abnormal_types.json" };
+// Tên dây chuyền: hiển thị đúng tên OCR đọc được (Q5); khóa bỏ hoa/thường, khoảng trắng để 'CBs2' và 'CBS2' là 1 dây chuyền.
+// Thứ tự cố định = màu cố định.
+const LINE_ORDER = ["outbound", "inbound", "cbs21stlayer", "cbs12stlayer"];
+const LINE_COLOR = ["var(--s1)", "var(--s2)", "var(--s3)", "var(--s4)"];
+const lineOf = raw => ({ key: norm(raw).replace(/ /g, ""), ten: raw.trim() });
 
 // ---------------------------------------------------------------- dữ liệu
 const H1 = RAW.scada.map(r => {
   const pb = r.phan_bo_bat_thuong.map(x => ({ ...x, key: x.loai_key, ten: x.loai_vi, dung: DUNG[x.loai_key] || "tham khảo" }));
-  const pick = k => pb.filter(x => x.key === k).reduce((s, x) => s + x.so_luong, 0); // loại vắng mặt = 0 (chờ Q8)
-  const all = r.so_luong_da_quet, noread = pick("NO_BARCODE"), nopost = pick("NO_SORT_REPORT"), reject = noread + nopost;
+  const pick = k => pb.filter(x => x.key === k).reduce((s, x) => s + x.so_luong, 0); // loại vắng mặt trên biểu đồ tròn = 0 (Q8)
+  const all = r.so_luong_da_quet, noread = pick("NO_BARCODE"), ongdan = pick("CHUTE_REQUEST_FAILED"), reject = noread + ongdan;
   const line = lineOf(r.day_chuyen);
-  return { r, pb, day: dayOf(r.thoi_gian_tu), line, all, noread, nopost, reject, correct: all - reject,
+  return { r, pb, day: dayOf(r.thoi_gian_tu), line, all, noread, ongdan, reject, correct: all - reject,
            rate: all ? reject / all : null, max: r.cong_suat_cao_nhat_1h, hours: r.cong_suat_cao_nhat_1h ? all / r.cong_suat_cao_nhat_1h : null };
 });
 const LINES = [...new Map(H1.map(x => [x.line.key, x.line])).values()]
@@ -228,7 +223,7 @@ function renderH1() {
   $("h1-kpis").innerHTML =
       tile("ALL", fInt(S(x => x.all)), "Số lượng đã quét")
     + tile("CORRECT", withPct(S(x => x.correct), has(rate) ? 1 - rate : null), "ALL − REJECT · tỷ lệ = 100% − tỷ lệ REJECT")
-    + tile("REJECT", withPct(S(x => x.reject), rate), `NOREAD ${fInt(S(x => x.noread))} · NOPOST ${fInt(S(x => x.nopost))}`)
+    + tile("REJECT", withPct(S(x => x.reject), rate), `Không có mã vạch ${fInt(S(x => x.noread))} · Yêu cầu ống dẫn thất bại ${fInt(S(x => x.ongdan))}`)
     + (one || !today.length ? tile("Công suất MAX", fInt(one?.max), one ? `${one.r.cong_suat_max_tu.slice(11, 16)}–${one.r.cong_suat_max_den.slice(11, 16)}` : "")
                             : tile("Công suất MAX", fInt(S(x => x.max)), `Tổng MAX của ${today.length} dây chuyền (mỗi dây chuyền đạt MAX ở khung giờ khác nhau)` + perLine(x => x.max, fInt)))
     + (one || !today.length ? tile("Thời gian sử dụng", fH(one?.hours), "ALL / MAX, ước tính")
@@ -240,8 +235,8 @@ function renderH1() {
     { name: "CORRECT", color: "var(--s1)", values: byDay(x => x.correct) },
     { name: "REJECT", color: "var(--s2)", values: byDay(x => x.reject) }] });
   chart($("h1-c2"), { days, type: "stack", fmt: fInt, selected: kpiDay, onPick, series: [
-    { name: "NOREAD (Không Có Mã Vạch)", color: "var(--s7)", values: byDay(x => x.noread) },
-    { name: "NOPOST (Không có Báo cáo Phân loại)", color: "var(--s5)", values: byDay(x => x.nopost) }] });
+    { name: "Không có mã vạch", color: "var(--s7)", values: byDay(x => x.noread) },
+    { name: "Yêu cầu ống dẫn thất bại", color: "var(--s5)", values: byDay(x => x.ongdan) }] });
   const m = $("h1-metric").value;
   const mfmt = { all: fInt, reject: fInt, rate: (v, axis) => axis ? fDec(v * 100, 1) + "%" : fPct(v), max: fInt, hours: (v, axis) => axis ? fAxis(v) : fH(v) }[m];
   chart($("h1-c3"), { days, type: "group", fmt: mfmt, selected: kpiDay, onPick, series: LINES.map(l => ({
@@ -251,11 +246,11 @@ function renderH1() {
   const rows = [];
   for (const d of [...days].reverse()) for (const l of LINES) {
     const x = recs.find(x => x.day === d && x.line.key === l.key);
-    if (x) rows.push([dm(d), esc(l.ten), fInt(x.all), fInt(x.correct), fInt(x.reject), fInt(x.noread), fInt(x.nopost), fPct(x.rate),
+    if (x) rows.push([dm(d), esc(l.ten), fInt(x.all), fInt(x.correct), fInt(x.reject), fInt(x.noread), fInt(x.ongdan), fPct(x.rate),
       fInt(x.max), `${x.r.cong_suat_max_tu.slice(11, 16)}–${x.r.cong_suat_max_den.slice(11, 16)}`, fH(x.hours), warnBadge(warnList(x.r))]);
   }
   if (!rows.length) rows.push([DASH, "Không có dữ liệu trong khoảng ngày đã chọn", ...Array(10).fill("")]);
-  table($("h1-table"), ["Ngày", "Dây chuyền", "ALL", "CORRECT", "REJECT", "NOREAD", "NOPOST", "Tỷ lệ REJECT", "Công suất MAX", "Khung giờ MAX", "Thời gian sử dụng", "Cảnh báo"], rows);
+  table($("h1-table"), ["Ngày", "Dây chuyền", "ALL", "CORRECT", "REJECT", "Không có mã vạch", "Yêu cầu ống dẫn thất bại", "Tỷ lệ REJECT", "Công suất MAX", "Khung giờ MAX", "Thời gian sử dụng", "Cảnh báo"], rows);
 
 }
 initRange("h1", H1.map(x => x.day), renderH1);
@@ -275,7 +270,7 @@ function renderH2() {
     + tile("CORRECT", withPct(k.correct, has(k.rate) ? 1 - k.rate : null),
            k.s ? `CorrectChute ${fInt(k.s.correct_chute)} + PDA ${fInt(k.pda)}` : "CorrectChute + PDA")
     + tile("REJECT", withPct(k.reject, k.rate), "RejectChute")
-    + tile("Công suất AVG", has(k.avg) ? fDec(k.avg) : DASH, "Báo cáo Capacity")
+    + tile("Công suất AVG", has(k.avg) ? fDec(k.avg) : DASH, "bưu kiện/giờ · báo cáo Capacity")
     + tile("Thời gian sử dụng", fH(k.hours), "ALL / AVG");
   const onPick = d => { st.h2.kpi = d; renderH2(); };
   const v = f => D.map(f);
@@ -311,7 +306,7 @@ function renderH2() {
       has(x.rate) ? fPct(1 - x.rate) : DASH, fPct(x.rate), has(x.avg) ? fDec(x.avg) : DASH, fH(x.hours), warnBadge(w)];
   });
   if (!rows.length) rows.push([DASH, "Không có dữ liệu trong khoảng ngày đã chọn", ...Array(9).fill("")]);
-  table($("h2-table"), ["Ngày", "Nguồn", "ALL", "CORRECT", "trong đó PDA", "REJECT", "Tỷ lệ CORRECT", "Tỷ lệ REJECT", "Công suất AVG", "Thời gian sử dụng", "Cảnh báo"], rows);
+  table($("h2-table"), ["Ngày", "Nguồn", "ALL", "CORRECT", "trong đó PDA", "REJECT", "Tỷ lệ CORRECT", "Tỷ lệ REJECT", "Công suất AVG (bưu kiện/giờ)", "Thời gian sử dụng", "Cảnh báo"], rows);
 }
 initRange("h2", [...SORTED.keys(), ...CAP.keys(), ...BCR.keys()], renderH2);
 renderH2();
