@@ -63,6 +63,7 @@ class Report(Base):
     raw_json_1: Mapped[dict | None] = mapped_column(JSON)
     raw_json_2: Mapped[dict | None] = mapped_column(JSON)
     attempts: Mapped[list | None] = mapped_column(JSON)
+    ocr_version: Mapped[str | None] = mapped_column(String)  # bản OCR đang dùng '<report_id>:<lần>'; None = mặc định / sửa tay
     created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=now, onupdate=now)
     upload: Mapped[Upload | None] = relationship(back_populates="reports")

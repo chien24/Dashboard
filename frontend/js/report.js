@@ -41,18 +41,20 @@ function renderForm(data) {
   el("form").innerHTML = fields(data, "");
 }
 
-const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const when = s => s ? `${s.slice(8, 10)}/${s.slice(5, 7)} ${s.slice(11, 16)}` : "";
 
 function renderVersions(r) {
   const vs = r.versions || [];
-  el("versions").innerHTML = vs.length ? vs.map((v, i) => `<div class="ver">
+  const key = v => `${v.report_id}:${v.lan}`;  // khớp ocr_dang_dung của backend
+  const sua = vs.length && !vs.some(v => key(v) === r.ocr_dang_dung)
+    ? `<p class="hint">Đang dùng: <b>bản sửa tay</b> (số đã được sửa, không trùng lần OCR nào bên dưới).</p>` : "";
+  el("versions").innerHTML = sua + (vs.length ? vs.map((v, i) => `<div class="ver">
       <div class="ver-head"><b>OCR lần ${i + 1}</b>
         <span class="hint">${escHtml(when(v.created_at))}${v.report_id !== r.id ? ` · report #${+v.report_id}` : ""}</span>
-        ${same(v.data, r.data) ? `<span class="status-badge ok">Đang dùng</span>` : ""}
+        ${key(v) === r.ocr_dang_dung ? `<span class="status-badge ok">Đang dùng</span>` : ""}
         <button class="btn" type="button" data-ver="${i}">Dùng bản này</button></div>
       <details><summary>Xem JSON</summary><pre class="raw">${escHtml(JSON.stringify(v.data, null, 2))}</pre></details>
-    </div>`).join("") : `<p class="hint">Không có bản OCR nào (report import từ JSON).</p>`;
+    </div>`).join("") : `<p class="hint">Không có bản OCR nào (report import từ JSON).</p>`);
 }
 
 function render(r) {
@@ -69,10 +71,10 @@ function render(r) {
   el("reocr").disabled = !r.upload_id;
 }
 
-async function save(data, done = "Đã lưu. Dashboard dùng số liệu mới.") {
+async function save(data, done = "Đã lưu. Dashboard dùng số liệu mới.", ocrVersion = null) {
   el("msg").textContent = "Đang lưu…";
   try {
-    render(await api.saveReport(id, data, report.updated_at));
+    render(await api.saveReport(id, data, report.updated_at, ocrVersion));
     el("msg").textContent = done;
   } catch (e) {
     el("msg").innerHTML = `<span class="err">${escHtml(e.message)}</span>`;
@@ -109,7 +111,8 @@ el("versions").addEventListener("click", e => {
   if (!b) return;
   const n = +b.dataset.ver + 1;
   if (!confirm(`Thay số liệu đang dùng bằng OCR lần ${n}? Số đang có (kể cả phần đã sửa tay) sẽ bị thay.`)) return;
-  save(structuredClone(report.versions[n - 1].data), `Đã quay về OCR lần ${n}. Dashboard dùng số liệu này.`);
+  const v = report.versions[n - 1];
+  save(structuredClone(v.data), `Đã quay về OCR lần ${n}. Dashboard dùng số liệu này.`, `${v.report_id}:${v.lan}`);
 });
 
 el("reocr").addEventListener("click", async () => {

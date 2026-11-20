@@ -52,6 +52,13 @@ def versions(db, rep: Report) -> list[dict]:
             for r in reps for lan, raw in ((1, r.raw_json_1), (2, r.raw_json_2)) if raw]
 
 
+def ocr_dang_dung(rep: Report) -> str | None:
+    """Bản OCR đang dùng. Chưa chọn bản nào: report OCR xong dùng lần 1 (pipeline giữ lần 1); đã sửa tay thì None."""
+    if rep.ocr_version:
+        return rep.ocr_version
+    return f"{rep.id}:1" if rep.status != "da_sua_tay" and rep.raw_json_1 else None
+
+
 def get_or_404(db, rid: int) -> Report:
     rep = db.get(Report, rid)
     if not rep:
@@ -94,7 +101,8 @@ def get_report(rid: int, db=Depends(get_db)):
     rep = get_or_404(db, rid)
     out = {**summary(rep), "data": rep.data, "canh_bao": rep.canh_bao, "raw_json_1": rep.raw_json_1,
            "raw_json_2": rep.raw_json_2, "attempts": rep.attempts, "image_url": image_url(rep),
-           "dang_dung": rep.id in dang_dung(db, [rep.id]), "versions": versions(db, rep)}
+           "dang_dung": rep.id in dang_dung(db, [rep.id]), "versions": versions(db, rep),
+           "ocr_dang_dung": ocr_dang_dung(rep)}
     if rep.loai == "scada":  # tên loại bất thường đã chuẩn hóa (abnormal_types.json), để hiển thị cạnh nhãn OCR gốc
         out["bat_thuong"] = [{**p, **dict(zip(("loai_key", "loai_vi"), abnormal_type(p["loai"])))}
                              for p in (rep.data or {}).get("phan_bo_bat_thuong", [])]
@@ -102,16 +110,23 @@ def get_report(rid: int, db=Depends(get_db)):
 
 
 @router.put("/{rid}")
-def edit_report(rid: int, data: dict = Body(...), updated_at: datetime | None = None, db=Depends(get_db)):
+def edit_report(rid: int, data: dict = Body(...), updated_at: datetime | None = None, ocr_version: str | None = None,
+                db=Depends(get_db)):
     """Sửa tay khi OCR sai: validate schema + số học lại, status = da_sua_tay. raw_json giữ nguyên.
     updated_at = giá trị lúc mở report; máy khác đã lưu sau đó thì trả 409 thay vì ghi đè im lặng."""
     rep = get_or_404(db, rid)
+    vs = {f"{v['report_id']}:{v['lan']}": v["data"] for v in versions(db, rep)}
+    if ocr_version is not None and ocr_version not in vs:
+        raise HTTPException(422, "Không có bản OCR này")
+    truoc = ocr_dang_dung(rep)
     if updated_at is not None:
         # UPDATE có điều kiện = kiểm tra và giữ khóa ghi trong 1 lệnh: 2 máy lưu cùng lúc thì chỉ 1 máy qua
+        ts = now()
         hit = db.execute(update(Report).where(Report.id == rid, Report.updated_at == updated_at)
-                         .values(updated_at=now()).execution_options(synchronize_session=False)).rowcount
+                         .values(updated_at=ts).execution_options(synchronize_session=False)).rowcount
         if not hit:
             raise HTTPException(409, "Report này vừa được sửa ở máy khác. Tải lại trang để xem bản mới rồi sửa lại.")
+        rep.updated_at = ts  # giữ object khớp DB: lưu mà không đổi gì thì ORM không UPDATE, phải trả đúng mốc mới
     data = {k: v for k, v in data.items() if k != "canh_bao_ocr"}
     try:
         clean = validate_output(SCHEMAS[rep.loai], {**data, "canh_bao_ocr": []})
@@ -119,6 +134,13 @@ def edit_report(rid: int, data: dict = Body(...), updated_at: datetime | None = 
     except (BadOutput, ValueError) as e:
         raise HTTPException(422, str(e))
     clean.pop("canh_bao_ocr")
+    if ocr_version is None and truoc in vs:  # bấm Lưu mà số vẫn đúng bản đang dùng thì giữ đánh dấu
+        try:
+            ban = validate_output(SCHEMAS[rep.loai], {**vs[truoc], "canh_bao_ocr": []})
+            ocr_version = truoc if ban == {**clean, "canh_bao_ocr": []} else None
+        except BadOutput:
+            ocr_version = None
+    rep.ocr_version = ocr_version  # None + da_sua_tay = bản sửa tay
     rep.data = clean
     rep.thoi_gian_tu, rep.thoi_gian_den, rep.report_date = report_times(rep.loai, clean)
     rep.canh_bao = ["Đã sửa tay"] + VALIDATORS[rep.loai](clean)

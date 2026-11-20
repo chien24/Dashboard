@@ -34,6 +34,10 @@ def init_db(eng=None):
     from app import models  # noqa: F401  đăng ký bảng
     eng = eng or engine
     Base.metadata.create_all(eng)
+    from sqlalchemy import inspect, text
+    if "ocr_version" not in {c["name"] for c in inspect(eng).get_columns("reports")}:  # DB cũ: create_all không thêm cột
+        with eng.begin() as c:
+            c.execute(text("ALTER TABLE reports ADD COLUMN ocr_version VARCHAR"))
     if eng.dialect.name == "sqlite":  # create_all không tạo view; view của chatbot viết cho SQLite
         conn = eng.raw_connection()
         try:

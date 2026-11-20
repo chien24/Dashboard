@@ -45,3 +45,57 @@ def test_xoa_hoi_thoai_sau_30_ngay(clean_db):
         db.commit()
         assert cleanup(db)["chat_conversations"] == 1
         assert db.query(ChatConversation).count() == 1
+
+
+CAP = {"tu_ngay": "2026-11-15", "den_ngay": "2026-11-16",
+       "cong_suat_theo_ngay": [{"ngay": "2026-11-15", "cong_suat": 5000.0}, {"ngay": "2026-11-16", "cong_suat": 6000.0}]}
+
+
+def test_danh_dau_ban_ocr_dang_dung(clean_db):
+    """2 lần OCR giống hệt nhau thì chỉ 1 bản 'Đang dùng'; sửa tay thì không bản nào; chọn bản nào thì đánh dấu bản đó."""
+    c = client()
+    with SessionLocal() as db:
+        up = Upload(original_name="a.png", stored_path="x", sha256="h")
+        db.add(up)
+        db.flush()
+        r = Report(upload_id=up.id, loai="dmwcs_capacity", report_date=date(2026, 11, 16), data=CAP,
+                   raw_json_1={**CAP, "canh_bao_ocr": []}, raw_json_2={**CAP, "canh_bao_ocr": []})
+        db.add(r)
+        db.commit()
+        rid = r.id
+    get = lambda: c.get(f"/api/reports/{rid}").json()
+    put = lambda data, **q: c.put(f"/api/reports/{rid}", json=data, params={"updated_at": get()["updated_at"], **q})
+
+    assert get()["ocr_dang_dung"] == f"{rid}:1"                      # vừa OCR xong: dùng lần 1
+    assert put(CAP, ocr_version=f"{rid}:2").json()["ocr_dang_dung"] == f"{rid}:2"
+    assert put(CAP).json()["ocr_dang_dung"] == f"{rid}:2"            # bấm Lưu không đổi số: giữ đánh dấu
+    sua = {**CAP, "cong_suat_theo_ngay": [CAP["cong_suat_theo_ngay"][0], {"ngay": "2026-11-16", "cong_suat": 6100}]}
+    assert put(sua).json()["ocr_dang_dung"] is None                  # sửa số: bản sửa tay
+    assert put(CAP, ocr_version="999:1").status_code == 422
+
+
+def test_db_cu_duoc_them_cot_ocr_version(tmp_path):
+    from sqlalchemy import inspect, text
+
+    from app.db import init_db, make_engine
+    eng = make_engine(f"sqlite:///{(tmp_path / 'cu.db').as_posix()}")
+    init_db(eng)
+    with eng.begin() as c:
+        c.execute(text("ALTER TABLE reports DROP COLUMN ocr_version"))  # giả DB tạo trước khi có cột
+    init_db(eng)
+    assert "ocr_version" in {x["name"] for x in inspect(eng).get_columns("reports")}
+
+
+def test_luu_lien_tiep_khong_bao_nham_may_khac(clean_db):
+    """Lưu 2 lần liền không đổi số: lần sau dùng updated_at trả về từ lần trước, không được 409."""
+    c = client()
+    with SessionLocal() as db:
+        r = Report(loai="dmwcs_capacity", report_date=date(2026, 11, 16), data=CAP)
+        db.add(r)
+        db.commit()
+        rid = r.id
+    t = c.get(f"/api/reports/{rid}").json()["updated_at"]
+    for _ in range(3):
+        res = c.put(f"/api/reports/{rid}", json=CAP, params={"updated_at": t})
+        assert res.status_code == 200, res.text
+        t = res.json()["updated_at"]

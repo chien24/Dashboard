@@ -42,7 +42,8 @@ const api = {
   },
   job: (id) => request("GET", `/jobs/${id}`),
   report: (id) => request("GET", `/reports/${id}`),
-  saveReport: (id, data, updatedAt) => request("PUT", `/reports/${id}?updated_at=${encodeURIComponent(updatedAt)}`, data),
+  saveReport: (id, data, updatedAt, ocrVersion) => request("PUT", `/reports/${id}?updated_at=${encodeURIComponent(updatedAt)}`
+    + (ocrVersion ? `&ocr_version=${encodeURIComponent(ocrVersion)}` : ""), data),
   reocr: (id, provider, model) => request("POST", `/reports/${id}/reocr`, { provider, model }),
   providers: () => request("GET", "/system/providers"),
   chat: (message, conversationId, signal) => request("POST", "/chat", { message, conversation_id: conversationId ?? null }, signal),
