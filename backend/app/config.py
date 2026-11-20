@@ -64,3 +64,4 @@ CHAT_MAX_ROWS = int(os.environ.get("CHAT_MAX_ROWS", 200))
 CHAT_SUMMARY_ROWS = int(os.environ.get("CHAT_SUMMARY_ROWS", 50))
 CHAT_HISTORY_TURNS = int(os.environ.get("CHAT_HISTORY_TURNS", 6))
 CHAT_RATE_LIMIT_PER_MIN = int(os.environ.get("CHAT_RATE_LIMIT_PER_MIN", 10))
+CHAT_RETENTION_DAYS = int(os.environ.get("CHAT_RETENTION_DAYS", 30))  # hội thoại không dùng quá N ngày thì xóa

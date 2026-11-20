@@ -1,4 +1,5 @@
 // Trang hỏi đáp dữ liệu: gửi câu hỏi tới POST /api/chat, hiện câu trả lời + cảnh báo + bảng + SQL.
+// Bên trái: mọi cuộc trò chuyện của tài khoản chung (mọi máy). Mỗi máy nhớ cuộc đang mở của mình (localStorage).
 const $ = id => document.getElementById(id);
 const log = $("log"), form = $("composer"), input = $("msg"), sendBtn = $("send"), cancelBtn = $("cancel");
 const CONV_KEY = "chat_conversation_id";
@@ -71,6 +72,7 @@ async function ask(text) {
     const r = await api.chat(text, convId, pending.signal);
     convId = r.conversation_id;
     store.set(convId);
+    loadList();
     wait.className = "msg bot";
     wait.innerHTML = answerHtml(r);
     loadUsage();
@@ -86,21 +88,57 @@ async function ask(text) {
   }
 }
 
-async function restore() {
-  const id = store.get();
-  if (!id) return showSamples();
+/** Mở 1 cuộc trò chuyện (của máy này hoặc máy khác); sai / đã bị xóa thì về màn hình trống. */
+let openSeq = 0;
+async function openConv(id) {
+  const my = ++openSeq;  // bấm nhanh 2 cuộc: chỉ hiện cuộc bấm sau
+  if (pending) pending.abort();
+  log.innerHTML = "";
+  $("samples").hidden = true;
+  convId = null;
   try {
     const c = await api.conversation(id);
+    if (my !== openSeq) return;
     convId = c.conversation_id;
+    store.set(convId);
     for (const m of c.messages) {
       if (m.role === "user") bubble("user", `<p>${escHtml(m.content)}</p>`);
       else bubble("bot", answerHtml(m));
     }
     if (!c.messages.length) showSamples();
   } catch (e) {
-    store.set(null);  // hội thoại đã bị xóa (retention) hoặc chưa đăng nhập
+    store.set(null);  // hội thoại đã bị xóa (quá 30 ngày không dùng) hoặc chưa đăng nhập
     showSamples();
   }
+  markActive();
+}
+
+async function restore() {
+  const id = store.get();
+  if (!id) return showSamples();
+  await openConv(id);
+}
+
+// ---------------------------------------------------------------- danh sách cuộc trò chuyện
+const GROUPS = [[0, "Hôm nay"], [1, "Hôm qua"], [7, "7 ngày qua"], [Infinity, "30 ngày qua"]];
+function ageDays(s) {
+  const d = new Date(s), t = new Date();
+  return Math.round((new Date(t.getFullYear(), t.getMonth(), t.getDate()) - new Date(d.getFullYear(), d.getMonth(), d.getDate())) / 864e5);
+}
+async function loadList() {
+  let items;
+  try { items = await api.conversations(); } catch (e) { return; }
+  const box = $("conv-list");
+  if (!items.length) { box.innerHTML = `<p class="hint">Chưa có cuộc trò chuyện nào.</p>`; return; }
+  const groups = GROUPS.map(([max, ten]) => [ten, []]);
+  for (const it of items) groups[GROUPS.findIndex(([max]) => ageDays(it.updated_at) <= max)][1].push(it);
+  box.innerHTML = groups.filter(([, a]) => a.length).map(([ten, a]) => `<div class="conv-group"><h2>${ten}</h2>`
+    + a.map(it => `<button class="conv" type="button" data-conv="${+it.conversation_id}" title="${escHtml(it.title)}">${escHtml(it.title)}</button>`).join("")
+    + `</div>`).join("");
+  markActive();
+}
+function markActive() {
+  document.querySelectorAll(".conv").forEach(b => b.setAttribute("aria-current", +b.dataset.conv === convId));
 }
 
 function showSamples() {
@@ -123,14 +161,23 @@ input.addEventListener("keydown", e => {
 cancelBtn.onclick = () => pending && pending.abort();
 document.addEventListener("click", e => {
   const b = e.target.closest("[data-choice]");
-  if (b) ask(b.dataset.choice);
+  if (b) return ask(b.dataset.choice);
+  const c = e.target.closest("[data-conv]");
+  if (c && +c.dataset.conv !== convId) { openConv(+c.dataset.conv); toggleSide(false); }
 });
+function toggleSide(on) {
+  $("side").classList.toggle("open", on);
+  $("side-toggle").setAttribute("aria-expanded", on);
+}
+$("side-toggle").onclick = () => toggleSide(!$("side").classList.contains("open"));
 $("new-chat").onclick = () => {
   if (pending) pending.abort();
   convId = null;
   store.set(null);
   log.innerHTML = "";
   showSamples();
+  markActive();
+  toggleSide(false);
   input.focus();
 };
 
@@ -142,5 +189,6 @@ $("new-chat").onclick = () => {
     return;
   }
   await restore();
+  loadList();
   loadUsage();
 })();

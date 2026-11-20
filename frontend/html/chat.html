@@ -7,7 +7,7 @@
 <link rel="icon" type="image/png" href="../img/favicon.png">
 <script>try { if (+localStorage.getItem("jail_until") > Date.now()) location.replace("jail.html"); const t = localStorage.getItem("theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
 <link rel="stylesheet" href="../css/base.css?v=8">
-<link rel="stylesheet" href="../css/chat.css?v=1">
+<link rel="stylesheet" href="../css/chat.css?v=2">
 </head>
 <body>
 <header class="brandbar"><a class="logo" href="index.html"><img src="../img/logo_viettel_post.webp" alt="Viettel Post" width="103" height="40"></a>
@@ -16,33 +16,39 @@
 <nav class="topnav">
   <a href="index.html">Thiên Cơ Các</a><a href="upload.html">Truyền Pháp Ảnh</a><a href="history.html">Tàng Kinh Các</a><a href="chat.html" aria-current="page">Vấn Đạo Đài</a></nav>
 <main class="chat-main">
-  <div class="chat-head">
-    <div>
+  <aside class="chat-side" id="side" aria-label="Lịch sử trò chuyện">
+    <button class="btn primary" id="new-chat" type="button">+ Cuộc trò chuyện mới</button>
+    <div class="conv-list" id="conv-list"></div>
+    <p class="hint side-note">Lịch sử chung của mọi máy. Cuộc trò chuyện không dùng 30 ngày sẽ tự xóa.</p>
+  </aside>
+
+  <section class="chat-pane">
+    <div class="chat-head">
+      <button class="btn side-toggle" id="side-toggle" type="button" aria-expanded="false" aria-controls="side">Lịch sử trò chuyện</button>
       <h1>Vấn Đạo Đài</h1>
       <p class="sub">Hỏi bằng tiếng Việt về số liệu HT1 (SCADA) và HT2 (DMWCS). Mỗi câu trả lời kèm bảng kết quả và câu SQL đã chạy. Chỉ đọc dữ liệu, không sửa được.</p>
     </div>
-    <button class="btn" id="new-chat" type="button">Cuộc trò chuyện mới</button>
-  </div>
 
-  <section class="chat-log" id="log" aria-live="polite" aria-label="Hội thoại"></section>
+    <section class="chat-log" id="log" aria-live="polite" aria-label="Hội thoại"></section>
 
-  <div class="samples" id="samples" hidden>
-    <p class="hint">Thử một câu hỏi:</p>
-    <div class="sample-list" id="sample-list"></div>
-  </div>
-
-  <form class="composer" id="composer">
-    <label class="visually-hidden" for="msg">Câu hỏi</label>
-    <textarea id="msg" rows="2" maxlength="1000" placeholder="VD: Tỷ lệ REJECT HT2 hôm qua?" required></textarea>
-    <div class="composer-actions">
-      <button class="btn" id="cancel" type="button" hidden>Hủy</button>
-      <button class="btn primary" id="send" type="submit">Gửi câu hỏi</button>
+    <div class="samples" id="samples" hidden>
+      <p class="hint">Thử một câu hỏi:</p>
+      <div class="sample-list" id="sample-list"></div>
     </div>
-  </form>
-  <p class="hint composer-hint">Enter để gửi, Shift+Enter để xuống dòng. <span id="usage"></span></p>
+
+    <form class="composer" id="composer">
+      <label class="visually-hidden" for="msg">Câu hỏi</label>
+      <textarea id="msg" rows="2" maxlength="1000" placeholder="VD: Tỷ lệ REJECT HT2 hôm qua?" required></textarea>
+      <div class="composer-actions">
+        <button class="btn" id="cancel" type="button" hidden>Hủy</button>
+        <button class="btn primary" id="send" type="submit">Gửi câu hỏi</button>
+      </div>
+    </form>
+    <p class="hint composer-hint">Enter để gửi, Shift+Enter để xuống dòng. <span id="usage"></span></p>
+  </section>
 </main>
 <div id="toasts" aria-live="polite"></div>
-<script src="../js/api.js?v=4"></script>
-<script src="../js/chat.js?v=2"></script>
+<script src="../js/api.js?v=5"></script>
+<script src="../js/chat.js?v=3"></script>
 </body>
 </html>

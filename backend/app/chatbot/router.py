@@ -87,6 +87,19 @@ def chat(request: Request, message: str = Body(..., embed=True), conversation_id
     return {"conversation_id": conv.id, "message_id": msg.id, **r}
 
 
+@router.get("/conversations")
+def conversations(limit: int = 200, db=Depends(get_db)):
+    """Mọi hội thoại của tài khoản chung (mọi máy), mới dùng gần nhất trước; tiêu đề = câu hỏi đầu tiên."""
+    first = (select(ChatMessage.conversation_id, func.min(ChatMessage.id).label("mid"), func.count().label("n"))
+             .where(ChatMessage.role == "user").group_by(ChatMessage.conversation_id).subquery())
+    rows = db.execute(select(ChatConversation.id, ChatConversation.updated_at, ChatMessage.content, first.c.n)
+                      .join(first, first.c.conversation_id == ChatConversation.id)
+                      .join(ChatMessage, ChatMessage.id == first.c.mid)
+                      .order_by(ChatConversation.updated_at.desc(), ChatConversation.id.desc())
+                      .limit(min(limit, 500))).all()
+    return [{"conversation_id": i, "title": t[:120], "updated_at": u, "so_cau_hoi": n} for i, u, t, n in rows]
+
+
 @router.get("/conversations/{conv_id}")
 def conversation(conv_id: int, db=Depends(get_db)):
     conv = db.get(ChatConversation, conv_id)

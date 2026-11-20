@@ -47,6 +47,7 @@ const api = {
   providers: () => request("GET", "/system/providers"),
   chat: (message, conversationId, signal) => request("POST", "/chat", { message, conversation_id: conversationId ?? null }, signal),
   conversation: (id) => request("GET", `/chat/conversations/${id}`),
+  conversations: () => request("GET", "/chat/conversations"),
   chatUsage: () => request("GET", "/chat/usage"),
 };
 

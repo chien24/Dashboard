@@ -1,6 +1,25 @@
 /* Trang hỏi đáp dữ liệu: người dùng bên phải, bot bên trái, ô nhập dưới cùng. */
-.chat-main { max-width: 960px; display: flex; flex-direction: column; gap: 12px; }
-.chat-head { display: flex; justify-content: space-between; align-items: start; gap: 16px; flex-wrap: wrap; }
+/* bố cục kiểu Claude / ChatGPT: lịch sử bên trái, hội thoại bên phải */
+.chat-main { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 20px; align-items: start; }
+.chat-pane { display: flex; flex-direction: column; gap: 12px; min-width: 0; max-width: 960px; }
+.chat-head h1 { margin-top: 0; }
+.chat-side { position: sticky; top: 12px; display: flex; flex-direction: column; gap: 10px; max-height: calc(100vh - 24px); padding: 12px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); }
+.conv-list { flex: 1; min-height: 0; overflow-y: auto; }
+.conv-group h2 { margin: 12px 8px 4px; font-size: 12px; font-weight: 600; color: var(--muted); }
+.conv-group:first-child h2 { margin-top: 2px; }
+.conv { display: block; width: 100%; padding: 7px 10px; border: 0; border-radius: 8px; background: none; color: var(--ink); font: inherit; font-size: 13px;
+  text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+.conv:hover { background: var(--wash); }
+.conv[aria-current="true"] { background: color-mix(in srgb, var(--accent) 12%, var(--surface)); color: var(--accent); font-weight: 600; }
+.side-note { margin: 0; }
+.side-toggle { display: none; margin-bottom: 8px; }
+@media (max-width: 860px) {
+  .chat-main { grid-template-columns: 1fr; }
+  .chat-side { position: static; max-height: 60vh; }
+  .chat-side:not(.open) { display: none; }
+  .side-toggle { display: inline-block; }
+}
 .chat-log { display: flex; flex-direction: column; gap: 12px; min-height: 160px; }
 .msg { max-width: min(760px, 100%); padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); box-shadow: var(--shadow); min-width: 0; }
 .msg p { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; }

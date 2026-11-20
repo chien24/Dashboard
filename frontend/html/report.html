@@ -7,7 +7,7 @@
 <link rel="icon" type="image/png" href="../img/favicon.png">
 <script>try { if (+localStorage.getItem("jail_until") > Date.now()) location.replace("jail.html"); const t = localStorage.getItem("theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
 <link rel="stylesheet" href="../css/base.css?v=8">
-<link rel="stylesheet" href="../css/upload.css?v=3">
+<link rel="stylesheet" href="../css/upload.css?v=4">
 </head>
 <body>
 <header class="brandbar"><a class="logo" href="index.html"><img src="../img/logo_viettel_post.webp" alt="Viettel Post" width="103" height="40"></a>
@@ -24,22 +24,18 @@
     <div>
       <form class="form" id="form"></form>
       <div class="actions">
-        <button class="btn primary" id="save">Lưu</button>
-        <span id="msg" class="hint"></span>
+        <button class="btn primary" id="save" type="button">Lưu</button>
+        <button class="btn" id="add-row" type="button" hidden>Thêm giá trị</button>
+        <button class="btn" id="reocr" type="button">OCR lại</button>
+        <span id="msg" class="hint" aria-live="polite"></span>
       </div>
-      <details><summary>Sửa dạng JSON (thêm / bớt dòng)</summary><div>
-        <textarea id="json" rows="14" style="width:100%;font:12px monospace"></textarea>
-        <div class="actions"><button class="btn" id="save-json">Lưu JSON</button></div></div></details>
-      <details><summary>OCR lại</summary><div class="actions">
-        <select id="reocr-target"><option value="">Theo chuỗi fallback</option></select>
-        <button class="btn" id="reocr">OCR lại ảnh này</button><span id="reocr-msg" class="hint"></span></div></details>
-      <details><summary>Raw JSON 2 lần OCR · log fallback</summary><div><pre class="raw" id="raw"></pre></div></details>
+      <section class="versions"><h2>OCR Version</h2><div id="versions"></div></section>
       <div class="actions"><button class="btn" id="delete">Xóa report</button></div>
     </div>
   </div>
 </main>
-<script src="../js/api.js?v=4"></script>
+<script src="../js/api.js?v=5"></script>
 <script src="../js/chat-widget.js?v=3"></script>
-<script src="../js/report.js?v=2"></script>
+<script src="../js/report.js?v=3"></script>
 </body>
 </html>

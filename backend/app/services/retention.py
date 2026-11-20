@@ -16,9 +16,9 @@ def cleanup(db, dry_run: bool = False) -> dict:
     reports = db.scalars(select(Report).where(Report.report_date < cutoff)).all()
     caps = db.scalars(select(DmwcsCapacityDaily).where(DmwcsCapacityDaily.ngay < cutoff)).all()
     jobs = db.scalars(select(Job).where(Job.created_at < now() - timedelta(days=config.RETENTION_DAYS))).all()
-    # log chatbot có kết quả truy vấn = dữ liệu vận hành, xóa cùng hạn
+    # hội thoại chatbot: xóa khi không dùng quá CHAT_RETENTION_DAYS ngày (30)
     convs = db.scalars(select(ChatConversation.id).where(
-        ChatConversation.updated_at < now() - timedelta(days=config.RETENTION_DAYS))).all()
+        ChatConversation.updated_at < now() - timedelta(days=config.CHAT_RETENTION_DAYS))).all()
     gone = {r.id for r in reports}
     # upload không còn report nào sau khi xóa (và không còn job đang chờ)
     uploads = [u for u in db.scalars(select(Upload)).all()

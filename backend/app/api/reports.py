@@ -43,6 +43,15 @@ def summary(rep: Report) -> dict:
             "upload_id": rep.upload_id, "created_at": rep.created_at, "updated_at": rep.updated_at}
 
 
+def versions(db, rep: Report) -> list[dict]:
+    """Mọi lần OCR của cùng ảnh, cùng loại (kể cả các lần "OCR lại" tạo report khác), cũ -> mới."""
+    reps = db.scalars(select(Report).where(Report.upload_id == rep.upload_id, Report.loai == rep.loai)
+                      .order_by(Report.id)).all() if rep.upload_id else [rep]
+    return [{"report_id": r.id, "created_at": r.created_at, "lan": lan,
+             "data": {k: v for k, v in raw.items() if k != "canh_bao_ocr"}}
+            for r in reps for lan, raw in ((1, r.raw_json_1), (2, r.raw_json_2)) if raw]
+
+
 def get_or_404(db, rid: int) -> Report:
     rep = db.get(Report, rid)
     if not rep:
@@ -85,7 +94,7 @@ def get_report(rid: int, db=Depends(get_db)):
     rep = get_or_404(db, rid)
     out = {**summary(rep), "data": rep.data, "canh_bao": rep.canh_bao, "raw_json_1": rep.raw_json_1,
            "raw_json_2": rep.raw_json_2, "attempts": rep.attempts, "image_url": image_url(rep),
-           "dang_dung": rep.id in dang_dung(db, [rep.id])}
+           "dang_dung": rep.id in dang_dung(db, [rep.id]), "versions": versions(db, rep)}
     if rep.loai == "scada":  # tên loại bất thường đã chuẩn hóa (abnormal_types.json), để hiển thị cạnh nhãn OCR gốc
         out["bat_thuong"] = [{**p, **dict(zip(("loai_key", "loai_vi"), abnormal_type(p["loai"])))}
                              for p in (rep.data or {}).get("phan_bo_bat_thuong", [])]
