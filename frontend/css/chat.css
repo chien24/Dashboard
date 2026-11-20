@@ -27,7 +27,7 @@
   background: var(--surface); border: 1px solid var(--axis); border-radius: 8px; padding: 8px 10px; }
 .composer-actions { display: flex; gap: 8px; }
 .composer-hint { margin: -4px 0 0; }
-.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
 @media (max-width: 560px) {
   .composer { flex-direction: column; align-items: stretch; }
   .composer-actions { justify-content: flex-end; }
