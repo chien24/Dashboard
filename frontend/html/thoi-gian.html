@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thời gian sử dụng</title>
+<link rel="icon" type="image/png" href="../img/favicon.png">
+<script>try { if (+localStorage.getItem("jail_until") > Date.now()) location.replace("jail.html"); const t = localStorage.getItem("theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
+<link rel="stylesheet" href="../css/base.css?v=8">
+<link rel="stylesheet" href="../css/upload.css?v=3">
+<link rel="stylesheet" href="../css/dashboard.css?v=2">
+<style>.tg-file { margin: 12px 0; } .tg-file details { margin-top: 6px; box-shadow: none; } .tg-file summary { cursor: pointer; font-size: 13px; padding: 4px 0; } .tg-total { font-size: 14px; color: var(--ink-2); } .tg-total b { color: var(--ink); font-size: 16px; }</style>
+</head>
+<body>
+<header class="brandbar"><a class="logo" href="index.html"><img src="../img/logo_viettel_post.webp" alt="Viettel Post" width="103" height="40"></a>
+  <span class="brand">OCR Dashboard CNKT3</span>
+  <button class="theme-btn" id="theme-btn" type="button"></button></header>
+<nav class="topnav">
+  <a href="index.html">Thiên Cơ Các</a><a href="upload.html">Truyền Pháp Ảnh</a><a href="history.html">Tàng Kinh Các</a><a href="chat.html">Vấn Đạo Đài</a><a href="thoi-gian.html" aria-current="page">Đạo Vận Chi Lượng</a></nav>
+<main>
+  <h1>Đạo Vận Chi Lượng</h1>
+  <p class="sub">Chọn một hoặc nhiều file Excel (.xlsx) cùng cấu trúc. Cộng cột F (dạng 1h33m40s, 2m9s, 10s) giống công thức Excel, chia theo thiết bị ở cột A. File chỉ đọc trên máy, không gửi lên server và không lưu lại: tải lại trang (F5) là mất, muốn xem lại thì chọn file lần nữa.</p>
+  <label class="drop" id="drop">
+    <input type="file" id="pick" accept=".xlsx" multiple hidden>
+    <b>Kéo thả file Excel vào đây</b> hoặc bấm để chọn
+  </label>
+  <div id="tg-out" aria-live="polite"></div>
+</main>
+<div id="toasts" aria-live="polite"></div>
+<script src="../js/api.js?v=8"></script>
+<script src="../js/chat-widget.js?v=3"></script>
+<script src="../js/thoi-gian.js?v=2"></script>
+</body>
+</html>

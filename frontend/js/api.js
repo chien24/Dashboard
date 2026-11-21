@@ -95,7 +95,7 @@ const FOOTER = `<footer class="site-foot">
     </div>
     <div class="foot-col">
       <h4>Dẫn Lộ Bàn</h4>
-      <a href="index.html">Thiên Cơ Các</a><a href="upload.html">Truyền Pháp Ảnh</a><a href="history.html">Tàng Kinh Các</a><a href="chat.html">Vấn Đạo Đài</a>
+      <a href="index.html">Thiên Cơ Các</a><a href="upload.html">Truyền Pháp Ảnh</a><a href="history.html">Tàng Kinh Các</a><a href="chat.html">Vấn Đạo Đài</a><a href="thoi-gian.html">Đạo Vận Chi Lượng</a>
     </div>
   </div>
   <div class="foot-bottom">

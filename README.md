@@ -44,6 +44,7 @@ uvicorn app.main:app --reload
 
 - Dashboard: http://localhost:8000
 - Upload ảnh: http://localhost:8000/html/upload.html
+- Đạo Vận Chi Lượng – thời gian sử dụng (cộng cột F của file Excel .xlsx ngay trên trình duyệt, không lưu, không cần backend): http://localhost:8000/html/thoi-gian.html
 - Lịch sử (tìm theo tên file, lọc ngày, xem chi tiết từng lần OCR kể cả bản đã bị thay): http://localhost:8000/html/history.html
 - Swagger (tài liệu API): http://localhost:8000/docs
 
@@ -102,9 +103,9 @@ dashboard/
 │   ├── data/                  # (gitignore) ocr.db, uploads/
 │   ├── requirements.txt, .env.example, pytest.ini
 ├── frontend/
-│   ├── html/                  # index.html (dashboard), upload.html, history.html, report.html
+│   ├── html/                  # index.html (dashboard), upload.html, history.html, report.html, chat.html, thoi-gian.html
 │   ├── css/                   # base.css, dashboard.css, upload.css
-│   └── js/                    # api.js (mọi fetch đi qua đây), dashboard.js, upload.js, report.js, history.js
+│   └── js/                    # api.js (mọi fetch đi qua đây), dashboard.js, upload.js, report.js, history.js, thoi-gian.js (đọc .xlsx, cộng giờ, vẽ biểu đồ)
 ├── sample_dashboar/           # ảnh mẫu: HT1/, HT2/{sorted,capacity,bcr_rate}/
 ├── ket_qua_json/              # JSON OCR cũ (import được)
 ├── data_dictionary.md         # ý nghĩa từng trường, lỗi OCR đã biết
