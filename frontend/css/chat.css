@@ -34,9 +34,6 @@
 .chat-tbl { margin-top: 10px; max-height: 360px; overflow: auto; border: 1px solid var(--border); border-radius: 8px; }
 .chat-tbl th { text-align: right; }
 .chat-tbl th:first-child { text-align: left; }
-.msg details.sql { margin: 10px 0 0; box-shadow: none; border-radius: 8px; }
-.msg details.sql summary { padding: 6px 10px; font-size: 13px; }
-.msg details.sql pre { margin: 0; padding: 0 10px 10px; overflow-x: auto; font-size: 12px; line-height: 1.45; }
 .msg .meta { margin-top: 8px; font-size: 12px; color: var(--muted); }
 .samples .sample-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
 .btn.sample { font-weight: 500; text-align: left; }

@@ -14,6 +14,7 @@ from app.services import worker
 
 router = APIRouter(prefix="/api", tags=["upload"])
 EXT = {".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp"}
+MAX_PIXELS = 50_000_000  # ảnh chụp màn hình 4K mới ~8 MP; chặn ảnh nén nhỏ nhưng giải mã ra hàng trăm MB RAM
 
 
 def image_info(path: Path) -> tuple[int, int]:
@@ -24,9 +25,12 @@ def image_info(path: Path) -> tuple[int, int]:
         with Image.open(path) as im:
             im.verify()
         with Image.open(path) as im:
+            if im.width * im.height > MAX_PIXELS:
+                raise ValueError("quá nhiều điểm ảnh")
+            im.load()  # giải mã hết: verify() không phát hiện ảnh bị cắt dở, ảnh đó lọt vào OCR rồi lỗi ở mọi provider
             return im.size
     except Exception:
-        raise HTTPException(400, f"File không phải ảnh hợp lệ: {path.name}")
+        raise HTTPException(400, f"File không phải ảnh hợp lệ hoặc bị hỏng: {path.name}")
 
 
 def new_job(db, upload_id: int, loai: str | None, only_provider=None, only_model=None) -> Job:
@@ -65,7 +69,10 @@ async def upload(files: list[UploadFile] = File(...), loai: str | None = Form(No
             raise HTTPException(413, f"{f.filename} lớn hơn {config.MAX_UPLOAD_MB} MB")
         sha = hashlib.sha256(body).hexdigest()
         up = db.scalar(select(Upload).where(Upload.sha256 == sha))
-        if up and not force:
+        if up and not Path(up.stored_path).exists():  # lần trước OCR thất bại nên file đã bị xóa: ghi lại rồi OCR như ảnh mới
+            Path(up.stored_path).parent.mkdir(parents=True, exist_ok=True)
+            Path(up.stored_path).write_bytes(body)
+        elif up and not force:
             out.append(duplicate(f.filename, up))
             continue
         if not up:

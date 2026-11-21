@@ -82,7 +82,7 @@
         wait.innerHTML = escHtml(r.answer || "")
           + (warns ? `<ul class="cw-warn">${warns}</ul>` : "")
           + (choices ? `<div class="cw-choices">${choices}</div>` : "")
-          + ((r.rows || []).length ? `<a class="cw-more" href="chat.html">Xem bảng kết quả và SQL</a>` : "");
+          + ((r.rows || []).length ? `<a class="cw-more" href="chat.html">Xem bảng kết quả</a>` : "");
       } catch (e) {
         wait.className = "cw-msg bot err";
         wait.textContent = e.status === 401 ? "Phiên đăng nhập đã hết, hãy Nhập Môn lại." : "Không gửi được câu hỏi: " + e.message;

@@ -8,7 +8,7 @@ from sqlalchemy import select
 
 from app import config
 from app.db import SessionLocal
-from app.models import Job, Upload, now
+from app.models import Job, Report, Upload, now
 from app.ocr import pipeline
 from app.services.ingest import ingest
 
@@ -47,6 +47,17 @@ def run_job(job_id: int):
     except Exception as e:  # lỗi 1 job không được làm chết luồng worker
         log.exception("Job %s lỗi", job_id)
         _set(job_id, status="failed", error=f"{type(e).__name__}: {e}"[:2000], finished_at=now())
+        _drop_failed_image(up.id)
+
+
+def _drop_failed_image(upload_id: int):
+    """OCR thất bại: ảnh không thuộc report nào và không còn job chờ thì xóa file. Giữ dòng uploads/jobs để trang
+    Upload còn đọc được lỗi; upload lại / "Thử lại" thì /api/upload ghi lại file. Retention xóa dòng sau RETENTION_DAYS."""
+    with SessionLocal() as db:
+        busy = db.scalar(select(Job.id).where(Job.upload_id == upload_id, Job.status.in_(("pending", "running"))).limit(1))
+        has_report = db.scalar(select(Report.id).where(Report.upload_id == upload_id).limit(1))
+        if not busy and not has_report:
+            Path(db.get(Upload, upload_id).stored_path).unlink(missing_ok=True)
 
 
 def _loop():

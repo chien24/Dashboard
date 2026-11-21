@@ -34,6 +34,13 @@ def test_anh_trung_khong_ocr_lai(clean_db):
 def test_tu_choi_file_xau(clean_db, monkeypatch):
     files_before = set(config.UPLOAD_DIR.rglob("*.*"))
     assert post("x.png", b"khong phai anh").status_code == 400  # đúng đuôi nhưng không phải ảnh
+    buf = io.BytesIO()
+    Image.effect_noise((256, 256), 64).convert("RGB").save(buf, "JPEG")
+    jpg = buf.getvalue()
+    assert post("cut.jpg", jpg[:len(jpg) // 2]).status_code == 400  # JPEG bị cắt dở: verify() cho qua, load() mới bắt
+    buf = io.BytesIO()
+    Image.new("1", (8000, 8000)).save(buf, "PNG")  # file vài KB nhưng 64 MP
+    assert post("to_pixel.png", buf.getvalue()).status_code == 400
     assert set(config.UPLOAD_DIR.rglob("*.*")) == files_before  # file hỏng đã bị xóa, không nằm lại trên đĩa
     assert post("x.exe", png()).status_code == 400
     monkeypatch.setattr(config, "MAX_UPLOAD_MB", 0.00001)
@@ -111,3 +118,30 @@ def test_xoa_report_khi_anh_dang_ocr_lai_thi_giu_anh(clean_db):
     a = post("a.png", png()).json()[0]  # job đang pending
     r = _report(a["upload_id"])
     assert not c.delete(f"/api/reports/{r}").json()["upload_deleted"]
+
+
+def test_ocr_that_bai_thi_xoa_file_anh(clean_db, monkeypatch):
+    """Job lỗi + ảnh chưa có report: file bị xóa; upload lại cùng ảnh thì ghi lại file và OCR như ảnh mới."""
+    from pathlib import Path
+
+    from app.db import SessionLocal
+    from app.models import Job, Upload
+    from app.ocr import pipeline
+    from app.services import worker
+
+    def boom(*a, **k):
+        raise ValueError("Không nhận diện được loại màn hình")
+    monkeypatch.setattr(pipeline, "process", boom)
+    a = post("a.png", png()).json()[0]
+    worker.run_job(a["job_id"])
+    with SessionLocal() as db:
+        path = Path(db.get(Upload, a["upload_id"]).stored_path)
+        assert db.get(Job, a["job_id"]).status == "failed"  # trang Upload vẫn đọc được lỗi
+    assert not path.exists()
+    b = post("a.png", png()).json()[0]
+    assert not b["duplicate"] and b["job_id"] != a["job_id"] and path.read_bytes() == png()
+
+    # ảnh đã có report (OCR lại bị lỗi) thì giữ file
+    _report(a["upload_id"])
+    worker.run_job(b["job_id"])
+    assert path.exists()

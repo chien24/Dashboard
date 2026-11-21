@@ -45,7 +45,7 @@ def _history(db, conv_id: int) -> list[dict]:
 
 def _view(m: ChatMessage) -> dict:
     p = m.result_preview or {}
-    return {"message_id": m.id, "role": m.role, "content": m.content, "loai": m.loai, "sql": m.sql,
+    return {"message_id": m.id, "role": m.role, "content": m.content, "loai": m.loai,
             "columns": p.get("columns"), "rows": p.get("rows"), "row_count": p.get("row_count", 0),
             "truncated": p.get("truncated", False), "lua_chon": p.get("lua_chon"), "warnings": m.warnings or [],
             "model_sql": m.model_sql, "model_summary": m.model_summary, "latency_ms": m.latency_ms,
@@ -84,6 +84,7 @@ def chat(request: Request, message: str = Body(..., embed=True), conversation_id
     conv.updated_at = now()
     db.commit()
     r.pop("error")
+    r.pop("sql")  # SQL chỉ lưu DB để làm ngữ cảnh/ghi log, không trả cho người dùng
     return {"conversation_id": conv.id, "message_id": msg.id, **r}
 
 

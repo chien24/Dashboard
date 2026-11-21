@@ -1,4 +1,4 @@
-// Trang hỏi đáp dữ liệu: gửi câu hỏi tới POST /api/chat, hiện câu trả lời + cảnh báo + bảng + SQL.
+// Trang hỏi đáp dữ liệu: gửi câu hỏi tới POST /api/chat, hiện câu trả lời + cảnh báo + bảng.
 // Bên trái: mọi cuộc trò chuyện của tài khoản chung (mọi máy). Mỗi máy nhớ cuộc đang mở của mình (localStorage).
 const $ = id => document.getElementById(id);
 const log = $("log"), form = $("composer"), input = $("msg"), sendBtn = $("send"), cancelBtn = $("cancel");
@@ -46,11 +46,10 @@ function answerHtml(r) {
     ? `<ul class="chat-warn" aria-label="Cảnh báo dữ liệu">${r.warnings.map(w => `<li>${escHtml(w)}</li>`).join("")}</ul>` : "";
   const choices = (r.lua_chon || []).length
     ? `<div class="choices">${r.lua_chon.map(c => `<button class="btn" type="button" data-choice="${escHtml(c)}">${escHtml(c)}</button>`).join("")}</div>` : "";
-  const sql = r.sql ? `<details class="sql"><summary>Xem SQL</summary><pre><code>${escHtml(r.sql)}</code></pre></details>` : "";
   const models = [r.model_sql, r.model_summary].filter(Boolean).join(" · ");
   const meta = models || r.latency_ms ? `<p class="meta">${escHtml(models)}${r.latency_ms ? ` · ${(r.latency_ms / 1000).toFixed(1)} giây` : ""}</p>` : "";
   return `<p class="answer${r.loai === "loi" ? " err" : ""}">${escHtml(r.answer || r.content || "")}</p>${warns}${choices}
-    ${tableHtml(r.columns, r.rows, r.row_count, r.truncated)}${sql}${meta}`;
+    ${tableHtml(r.columns, r.rows, r.row_count, r.truncated)}${meta}`;
 }
 
 function setBusy(on) {
