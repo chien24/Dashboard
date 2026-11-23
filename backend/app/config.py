@@ -28,11 +28,13 @@ AUTH_USER = os.environ.get("AUTH_USER")
 AUTH_PASSWORD = os.environ.get("AUTH_PASSWORD")
 SESSION_SECRET = os.environ.get("SESSION_SECRET")
 
-KEYS = {"gemini": "GEMINI_API_KEY", "nvidia": "NVIDIA_API_KEY", "openrouter": "OPEN_ROUTER_API_KEY"}
+KEYS = {"cloudflare": "CLOUDFLARE_API_KEY", "nvidia": "NVIDIA_API_KEY", "openrouter": "OPEN_ROUTER_API_KEY"}
 
-# Thứ tự ưu tiên provider -> model. Override danh sách model bằng GEMINI_MODELS / NVIDIA_MODELS / OPENROUTER_MODELS.
+# Thứ tự ưu tiên provider -> model. Override danh sách model bằng CLOUDFLARE_MODELS / NVIDIA_MODELS / OPENROUTER_MODELS.
 PROVIDER_CHAIN = [
-    {"provider": "gemini", "models": _list("GEMINI_MODELS", ["gemini-3.8-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite"])},
+    {"provider": "cloudflare", "models": _list("CLOUDFLARE_MODELS", ["@cf/mistralai/mistral-small-3.1-24b-instruct",
+                                                                     "@cf/qwen/qwen3.8-27b",
+                                                                     "@cf/meta/llama-4-scout-17b-16e-instruct"])},
     {"provider": "nvidia", "models": _list("NVIDIA_MODELS", ["nvidia/nemotron-3.5-parse",
                                                              "nvidia/nemotron-3.5-super-vl-120b-a12b",
                                                               "meta/llama-3.2-90b-vision-instruct"])},
@@ -42,6 +44,8 @@ PROVIDER_CHAIN = [
 
 
 def api_key(provider: str) -> str | None:
+    if provider == "cloudflare" and not os.environ.get("CLOUDFLARE_ACCOUNT_ID"):
+        return None  # thiếu account ID thì coi như chưa cấu hình
     return os.environ.get(KEYS[provider]) or None
 
 

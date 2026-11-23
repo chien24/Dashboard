@@ -18,7 +18,7 @@ Máy Windows của bạn
    └─ Backend FastAPI :8000 (phục vụ luôn giao diện)
          ├─ backend/data/ocr.db       (SQLite)
          ├─ backend/data/uploads/     (ảnh upload)
-         └─ gọi API OCR: Gemini / NVIDIA / OpenRouter
+         └─ gọi API OCR: Cloudflare / NVIDIA / OpenRouter
 ```
 
 Bạn cần nhớ:
@@ -33,7 +33,7 @@ Bạn cần nhớ:
 | Máy Windows 10/11     | Máy sẽ chạy backend, nên bật thường xuyên          |
 | Tài khoản Gmail       | Dùng để đăng ký các dịch vụ                        |
 | Tài khoản GitHub      | Dùng để lấy code và xác minh tài khoản DigitalPlat |
-| Ít nhất 1 API key OCR | Gemini, NVIDIA NIM hoặc OpenRouter (mục 2.3)       |
+| Ít nhất 1 API key OCR | Cloudflare, NVIDIA NIM hoặc OpenRouter (mục 2.3)   |
 | Khoảng 1 tiếng        | Phần lớn thời gian là chờ tên miền kích hoạt       |
 
 ---
@@ -85,9 +85,10 @@ Mở file `backend\.env` bằng Notepad và điền **ít nhất một** key:
 
 | Biến                  | Lấy ở đâu                                                        |
 | --------------------- | ---------------------------------------------------------------- |
-| `GEMINI_API_KEY`      | https://aistudio.google.com/apikey                               |
+| `CLOUDFLARE_API_KEY` + `CLOUDFLARE_ACCOUNT_ID` | https://dash.cloudflare.com → AI → Workers AI (token quyền Workers AI) |
 | `NVIDIA_API_KEY`      | https://build.nvidia.com (chỉ dùng model có tag _Free Endpoint_) |
 | `OPEN_ROUTER_API_KEY` | https://openrouter.ai/keys                                       |
+| `GROQ_API_KEY`        | https://console.groq.com/keys                                    |
 
 > ⚠️ **Không bao giờ** commit hay gửi file `.env` cho ai. Nếu lỡ để lộ, hãy vào trang của nhà cung cấp, xóa key cũ và tạo key mới.
 

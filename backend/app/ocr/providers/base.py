@@ -99,7 +99,7 @@ class BaseProvider:
 
 
 class OpenAICompatProvider(BaseProvider):
-    """NVIDIA NIM và OpenRouter: OpenAI SDK chat.completions, ảnh base64, temperature=0, prompt kèm JSON schema."""
+    """Cloudflare, NVIDIA NIM và OpenRouter: OpenAI SDK chat.completions, ảnh base64, temperature=0, prompt kèm JSON schema."""
     base_url = ""
     extra_body: dict | None = None
     extra_headers: dict | None = None

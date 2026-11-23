@@ -41,6 +41,7 @@ const api = {
     return request("POST", "/upload", fd);
   },
   job: (id) => request("GET", `/jobs/${id}`),
+  activeJobs: () => request("GET", "/jobs"),
   report: (id) => request("GET", `/reports/${id}`),
   saveReport: (id, data, updatedAt, ocrVersion) => request("PUT", `/reports/${id}?updated_at=${encodeURIComponent(updatedAt)}`
     + (ocrVersion ? `&ocr_version=${encodeURIComponent(ocrVersion)}` : ""), data),

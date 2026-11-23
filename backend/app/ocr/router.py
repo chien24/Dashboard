@@ -29,11 +29,11 @@ class AllProvidersFailed(Exception):
 
 
 def make_provider(name: str):
-    from app.ocr.providers.gemini import GeminiProvider
+    from app.ocr.providers.cloudflare import CloudflareProvider
     from app.ocr.providers.nvidia import NvidiaProvider
     from app.ocr.providers.openrouter import OpenRouterProvider
 
-    return {"gemini": GeminiProvider, "nvidia": NvidiaProvider, "openrouter": OpenRouterProvider}[name](config.api_key(name))
+    return {"cloudflare": CloudflareProvider, "nvidia": NvidiaProvider, "openrouter": OpenRouterProvider}[name](config.api_key(name))
 
 
 # ---------------------------------------------------------------- model_status

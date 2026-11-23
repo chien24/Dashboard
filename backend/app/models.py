@@ -38,7 +38,7 @@ class Job(Base):
     only_provider: Mapped[str | None] = mapped_column(String)  # OCR lại bằng provider/model chỉ định
     only_model: Mapped[str | None] = mapped_column(String)
     status: Mapped[str] = mapped_column(String, default="pending", index=True)  # pending/running/done/failed
-    progress: Mapped[str | None] = mapped_column(String)  # "lần 1/2 · gemini/gemini-3.6-flash" cho trang upload
+    progress: Mapped[str | None] = mapped_column(String)  # "lần 1/2 · cloudflare/@cf/qwen/qwen3.8-27b" cho trang upload
     error: Mapped[str | None] = mapped_column(Text)
     report_id: Mapped[int | None] = mapped_column(ForeignKey("reports.id", ondelete="SET NULL"))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=now)

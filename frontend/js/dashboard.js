@@ -220,12 +220,18 @@ function renderH1() {
   const perLine = (f, fmt) => `<ul>${today.map(x => `<li><span>${esc(x.line.ten)}</span><b>${fmt(f(x))}</b></li>`).join("")}</ul>`;
   const one = today.length === 1 ? today[0] : null;
   const rate = today.length && S(x => x.all) ? S(x => x.reject) / S(x => x.all) : null;
+  // Riêng ô Công suất MAX không tính dây chuyền Outbound; các ô khác vẫn tính đủ
+  const mx = today.filter(x => x.line.key !== "outbound"), mxOne = mx.length === 1 ? mx[0] : null;
+  const maxTile = mxOne || !mx.length
+    ? tile("Công suất MAX", fInt(mxOne?.max), mxOne ? `${esc(mxOne.line.ten)} · ${mxOne.r.cong_suat_max_tu.slice(11, 16)}–${mxOne.r.cong_suat_max_den.slice(11, 16)}`
+                                                    : today.length ? "Không tính Outbound" : "")
+    : tile("Công suất MAX", fInt(sum(mx, x => x.max)), `Tổng MAX của ${mx.length} dây chuyền, không tính Outbound (mỗi dây chuyền đạt MAX ở khung giờ khác nhau)`
+                                                       + `<ul>${mx.map(x => `<li><span>${esc(x.line.ten)}</span><b>${fInt(x.max)}</b></li>`).join("")}</ul>`);
   $("h1-kpis").innerHTML =
       tile("ALL", fInt(S(x => x.all)), "Số lượng đã quét")
     + tile("CORRECT", withPct(S(x => x.correct), has(rate) ? 1 - rate : null), "ALL − REJECT · tỷ lệ = 100% − tỷ lệ REJECT")
     + tile("REJECT", withPct(S(x => x.reject), rate), `Không có mã vạch ${fInt(S(x => x.noread))} · Yêu cầu ống dẫn thất bại ${fInt(S(x => x.ongdan))}`)
-    + (one || !today.length ? tile("Công suất MAX", fInt(one?.max), one ? `${one.r.cong_suat_max_tu.slice(11, 16)}–${one.r.cong_suat_max_den.slice(11, 16)}` : "")
-                            : tile("Công suất MAX", fInt(S(x => x.max)), `Tổng MAX của ${today.length} dây chuyền (mỗi dây chuyền đạt MAX ở khung giờ khác nhau)` + perLine(x => x.max, fInt)))
+    + maxTile
     + (one || !today.length ? tile("Thời gian sử dụng", fH(one?.hours), "ALL / MAX, ước tính")
                             : tile("Thời gian sử dụng", fH(S(x => x.hours)), `Tổng giờ chạy của ${today.length} dây chuyền` + perLine(x => x.hours, fH)));
 
@@ -272,6 +278,18 @@ function renderH2() {
     + tile("REJECT", withPct(k.reject, k.rate), "RejectChute")
     + tile("Công suất AVG", has(k.avg) ? fDec(k.avg) : DASH, "bưu kiện/giờ · báo cáo Capacity")
     + tile("Thời gian sử dụng", fH(k.hours), "ALL / AVG");
+  // Dòng 2: cộng dồn cả khoảng ngày đang lọc. AVG = trung bình các ngày có Capacity; giờ = tổng giờ từng ngày (ALL ngày / AVG ngày)
+  const fullDate = d => d ? `${dm(d)}/${d.slice(0, 4)}` : DASH;
+  const R = D.filter(x => x.s), A = D.filter(x => has(x.avg)), Hs = D.filter(x => has(x.hours));
+  const rAll = sum(R, x => x.all), rRej = sum(R, x => x.reject), rRate = rAll ? rRej / rAll : null;
+  $("h2-range-day").textContent = `Tổng từ ${fullDate(days[0])} đến ${fullDate(days.at(-1))} · máy CBS`;
+  $("h2-range-kpis").innerHTML =
+      tile("ALL", fInt(rAll), `Tổng ${R.length} ngày có báo cáo Sorted`)
+    + tile("CORRECT", withPct(sum(R, x => x.correct), has(rRate) ? 1 - rRate : null),
+           R.length ? `CorrectChute ${fInt(sum(R, x => x.s.correct_chute))} + PDA ${fInt(sum(R, x => x.pda))}` : "CorrectChute + PDA")
+    + tile("REJECT", withPct(rRej, rRate), "RejectChute")
+    + tile("Công suất AVG", A.length ? fDec(sum(A, x => x.avg) / A.length) : DASH, `bưu kiện/giờ · trung bình ${A.length} ngày có báo cáo Capacity`)
+    + tile("Thời gian sử dụng", fH(sum(Hs, x => x.hours)), `Tổng ${Hs.length} ngày có cả Sorted và Capacity`);
   const onPick = d => { st.h2.kpi = d; renderH2(); };
   const v = f => D.map(f);
   chart($("h2-c1"), { days, type: "stack", fmt: fInt, selected: kpiDay, onPick, series: [
@@ -286,7 +304,6 @@ function renderH2() {
     series: [{ name: "Công suất AVG", color: "var(--s1)", values: v(x => x.avg) }] });
   // Scanner: theo ngày đang chọn như các biểu đồ khác; ngày đó không có dữ liệu BCR thì lấy ngày mới nhất trong khoảng lọc có BCR
   const bcrDay = BCR.has(kpiDay) ? kpiDay : [...days].reverse().find(d => BCR.has(d));
-  const fullDate = d => d ? `${dm(d)}/${d.slice(0, 4)}` : DASH;
   if (bcrDay) {
     $("h2-bcr-title").textContent = `Tỷ lệ đọc thành công của từng Scanner ngày ${fullDate(bcrDay)}`;
     bcrChart($("h2-c4"), BCR.get(bcrDay));

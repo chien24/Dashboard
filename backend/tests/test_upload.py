@@ -145,3 +145,18 @@ def test_ocr_that_bai_thi_xoa_file_anh(clean_db, monkeypatch):
     _report(a["upload_id"])
     worker.run_job(b["job_id"])
     assert path.exists()
+
+
+def test_job_dang_chay_hien_lai_sau_khi_tai_lai_trang(clean_db):
+    """GET /api/jobs chỉ trả job pending/running (kèm tên gốc + ảnh) để trang upload vẽ lại thanh tiến trình."""
+    a = post("a.png", png()).json()[0]
+    b = post("b.png", png("blue")).json()[0]
+    from app.db import SessionLocal
+    from app.models import Job
+    with SessionLocal() as db:
+        db.get(Job, b["job_id"]).status = "done"
+        db.commit()
+    jobs = c.get("/api/jobs").json()
+    assert [j["id"] for j in jobs] == [a["job_id"]]
+    assert jobs[0]["file"] == "a.png" and jobs[0]["image_url"].startswith("/uploads/") and jobs[0]["elapsed_s"] >= 0
+    assert c.get(jobs[0]["image_url"]).status_code == 200

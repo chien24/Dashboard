@@ -5,21 +5,26 @@ const $id = id => document.getElementById(id);
 const LOAI_OPTS = `<option value="*">Theo lựa chọn chung</option><option value="">Thần Niệm (tự nhận diện)</option>`
   + Object.entries(LOAI_TEN).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
 
+/** 1 dòng ảnh. file = null khi dòng được vẽ lại từ job đang chạy trên server (sau khi tải lại trang). */
+function makeItem(name, url, file = null) {
+  const it = { file, name, url };
+  it.el = document.createElement("div");
+  it.el.className = "item";
+  it.el.innerHTML = `<img src="${escHtml(url || "")}" alt="">
+    <div><div class="item-head"><span class="name">${escHtml(name)}</span>
+      <select class="loai">${LOAI_OPTS}</select>
+      <div class="progress" hidden role="progressbar" aria-label="Tiến trình OCR" aria-valuemin="0" aria-valuemax="100"><div class="bar"></div></div>
+      <span class="state">Chưa gửi</span><span class="elapsed hint"></span></div></div>
+    <div class="result"></div>`;
+  items.push(it);
+  $id("items").append(it.el);
+  return it;
+}
+
 function addFiles(files) {
   if ($id("drop").classList.contains("locked")) return;  // chưa đăng nhập
   for (const file of files) {
-    if (!/\.(jpe?g|png|webp)$/i.test(file.name)) continue;
-    const it = { file, url: URL.createObjectURL(file) };
-    it.el = document.createElement("div");
-    it.el.className = "item";
-    it.el.innerHTML = `<img src="${it.url}" alt="">
-      <div><div class="item-head"><span class="name">${escHtml(file.name)}</span>
-        <select class="loai">${LOAI_OPTS}</select>
-        <div class="progress" hidden role="progressbar" aria-label="Tiến trình OCR" aria-valuemin="0" aria-valuemax="100"><div class="bar"></div></div>
-        <span class="state">Chưa gửi</span><span class="elapsed hint"></span></div></div>
-      <div class="result"></div>`;
-    items.push(it);
-    $id("items").append(it.el);
+    if (/\.(jpe?g|png|webp)$/i.test(file.name)) makeItem(file.name, URL.createObjectURL(file), file);
   }
   $id("start").disabled = !items.some(i => !i.sent);
 }
@@ -86,7 +91,7 @@ async function send(it, force = false) {
     if (r.duplicate && !r.report_id && r.job_id) return poll(it, r.job_id);  // ảnh trùng còn đang OCR dở: theo dõi luôn job đó
     if (r.duplicate) {
       finish(it, "warn", `Ảnh đã được xử lý trước đó${r.report_id ? ` · <a href="report.html?id=${r.report_id}">xem kết quả cũ</a>` : ""}
-        · <button class="btn" data-again>OCR lại</button>`, `<b>${escHtml(it.file.name)}</b><br>Ảnh này đã OCR trước đó, đang hiện kết quả cũ.`);
+        · <button class="btn" data-again>OCR lại</button>`, `<b>${escHtml(it.name)}</b><br>Ảnh này đã OCR trước đó, đang hiện kết quả cũ.`);
       it.el.querySelector("[data-again]").onclick = () => send(it, true);
       if (r.report_id) showReport(it, r.report_id);
       return;
@@ -99,7 +104,12 @@ async function send(it, force = false) {
 
 function failed(it, err) {
   const msg = escHtml(niceError(err));
-  finish(it, "fail", "✕ Thất bại", `<b>OCR thất bại: ${escHtml(it.file.name)}</b><br>${msg}`);
+  finish(it, "fail", "✕ Thất bại", `<b>OCR thất bại: ${escHtml(it.name)}</b><br>${msg}`);
+  if (!it.file) {  // dòng vẽ lại sau khi tải lại trang: trình duyệt không còn file để gửi lại
+    it.el.querySelector(".result").innerHTML = `<div class="err-box"><b>Không đọc được ảnh này.</b> ${msg}
+      <br><span class="hint">Kéo thả lại ảnh này để thử lại.</span></div>`;
+    return;
+  }
   it.el.querySelector(".result").innerHTML = `<div class="err-box"><b>Không đọc được ảnh này.</b> ${msg}
     <br><button class="btn" data-retry>Thử lại</button> <span class="hint">Có thể chọn đúng loại ảnh ở ô bên cạnh tên file rồi thử lại.</span></div>`;
   it.el.querySelector(".loai").disabled = false;
@@ -118,8 +128,8 @@ async function poll(it, jobId) {
   const link = `<a href="report.html?id=${job.report_id}">Xem / Sửa</a>`;
   if (r && r.status === "can_kiem_tra")
     finish(it, "warn", `✓ Xong, cần kiểm tra · ${link}`,
-      `<b>${escHtml(it.file.name)}</b><br>OCR xong nhưng có ${r.canh_bao.length} cảnh báo, nên kiểm tra lại số liệu. ${link}`);
-  else finish(it, "ok", `✓ Thành công · ${link}`, `<b>${escHtml(it.file.name)}</b><br>OCR thành công (${escHtml(LOAI_TEN[r?.loai] || r?.loai || "")}). ${link}`);
+      `<b>${escHtml(it.name)}</b><br>OCR xong nhưng có ${r.canh_bao.length} cảnh báo, nên kiểm tra lại số liệu. ${link}`);
+  else finish(it, "ok", `✓ Thành công · ${link}`, `<b>${escHtml(it.name)}</b><br>OCR thành công (${escHtml(LOAI_TEN[r?.loai] || r?.loai || "")}). ${link}`);
 }
 
 /** Bảng kết quả: cảnh báo tô vàng, trường lệch giữa 2 lần OCR tô đỏ. */
@@ -151,8 +161,21 @@ $id("start").addEventListener("click", async () => {
 });
 
 // Chưa đăng nhập: khóa chọn ảnh / upload (server cũng chặn, đây chỉ để người dùng biết vì sao).
-api.authed.then(ok => {
-  if (ok) return;
+api.authed.then(async ok => {
+  if (ok) {
+    // Job còn đang chờ/chạy trên server (vừa tải lại trang hoặc chuyển trang rồi quay lại): vẽ lại thanh tiến trình tới khi OCR xong
+    for (const job of await api.activeJobs().catch(() => [])) {
+      const it = makeItem(job.file, job.image_url);
+      const sel = it.el.querySelector(".loai");
+      sel.value = job.loai_hint || "";
+      sel.disabled = true;
+      it.sent = true;
+      it.t0 = Date.now() - job.elapsed_s * 1000;
+      it.timer = setInterval(() => tickElapsed(it), 1000);
+      poll(it, job.id);
+    }
+    return;
+  }
   $id("pick").disabled = true;
   ["loai-all", "start", "clear"].forEach(k => $id(k).disabled = true);
   drop.classList.add("locked");

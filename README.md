@@ -22,6 +22,7 @@ Upload ảnh chụp màn hình báo cáo SCADA (HT1) và DMWCS (HT2). Hệ thố
   - Gemini: https://aistudio.google.com/apikey
   - NVIDIA NIM: https://build.nvidia.com (chỉ dùng model có tag *Free Endpoint*)
   - OpenRouter: https://openrouter.ai/keys (free tier ~50 request/ngày)
+  - Groq: https://console.groq.com/keys
 
 ## 2. Cài đặt
 

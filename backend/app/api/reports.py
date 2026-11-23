@@ -6,7 +6,7 @@ from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from sqlalchemy import func, select, update
 
 from app import config
-from app.api.upload import new_job
+from app.api.upload import new_job, upload_url
 from app.db import get_db
 from app.models import DmwcsBcr, DmwcsCapacityDaily, DmwcsSorted, Job, Report, ScadaSummary, now
 from app.ocr.providers.base import BadOutput, validate_output
@@ -28,12 +28,7 @@ def dang_dung(db, ids: list[int]) -> set[int]:
 
 
 def image_url(rep: Report) -> str | None:
-    if not rep.upload:
-        return None
-    try:
-        return "/uploads/" + Path(rep.upload.stored_path).resolve().relative_to(config.UPLOAD_DIR.resolve()).as_posix()
-    except ValueError:
-        return None
+    return upload_url(rep.upload)
 
 
 def summary(rep: Report) -> dict:

@@ -99,6 +99,25 @@ async def upload(files: list[UploadFile] = File(...), loai: str | None = Form(No
     return out
 
 
+def upload_url(up: Upload | None) -> str | None:
+    if not up:
+        return None
+    try:
+        return "/uploads/" + Path(up.stored_path).resolve().relative_to(config.UPLOAD_DIR.resolve()).as_posix()
+    except ValueError:
+        return None
+
+
+@router.get("/jobs")
+def active_jobs(db=Depends(get_db)):
+    """Job đang chờ/chạy: trang upload vẽ lại thanh tiến trình sau khi tải lại trang hoặc chuyển trang rồi quay lại."""
+    rows = db.execute(select(Job, Upload).outerjoin(Upload, Upload.id == Job.upload_id)
+                      .where(Job.status.in_(("pending", "running"))).order_by(Job.id))
+    return [{"id": j.id, "status": j.status, "progress": j.progress, "loai_hint": j.loai_hint,
+             "file": up.original_name if up else f"job {j.id}", "image_url": upload_url(up),
+             "elapsed_s": max(0, (now() - j.created_at).total_seconds())} for j, up in rows]
+
+
 @router.get("/jobs/{job_id}")
 def get_job(job_id: int, db=Depends(get_db)):
     job = db.get(Job, job_id)
