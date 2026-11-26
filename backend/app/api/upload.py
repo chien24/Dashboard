@@ -1,5 +1,6 @@
 """POST /api/upload (nhiều ảnh), GET /api/jobs/{id}."""
 import hashlib
+import logging
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
@@ -13,6 +14,7 @@ from app.schemas import LOAI
 from app.services import worker
 
 router = APIRouter(prefix="/api", tags=["upload"])
+log = logging.getLogger("upload")
 EXT = {".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp"}
 MAX_PIXELS = 50_000_000  # ảnh chụp màn hình 4K mới ~8 MP; chặn ảnh nén nhỏ nhưng giải mã ra hàng trăm MB RAM
 
@@ -55,6 +57,7 @@ async def upload(files: list[UploadFile] = File(...), loai: str | None = Form(No
     def duplicate(name, up):
         rep = db.scalar(select(Report).where(Report.upload_id == up.id).order_by(Report.id.desc()))
         job = db.scalar(select(Job).where(Job.upload_id == up.id).order_by(Job.id.desc()))
+        log.info("Nhận ảnh %s: trùng ảnh đã tải (upload %d, report %s), không OCR lại", name, up.id, rep.id if rep else "-")
         return {"file": name, "upload_id": up.id, "duplicate": True,
                 "job_id": job.id if job else None, "report_id": rep.id if rep else None}
 
@@ -95,6 +98,7 @@ async def upload(files: list[UploadFile] = File(...), loai: str | None = Form(No
                 out.append(duplicate(f.filename, db.scalar(select(Upload).where(Upload.sha256 == sha))))
                 continue
         job = new_job(db, up.id, loai)
+        log.info("Nhận ảnh %s (%d KB, loại %s) -> job %d", f.filename, len(body) // 1024, loai or "tự nhận diện", job.id)
         out.append({"file": f.filename, "upload_id": up.id, "duplicate": False, "job_id": job.id, "report_id": None})
     return out
 

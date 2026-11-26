@@ -28,6 +28,13 @@ AUTH_USER = os.environ.get("AUTH_USER")
 AUTH_PASSWORD = os.environ.get("AUTH_PASSWORD")
 SESSION_SECRET = os.environ.get("SESSION_SECRET")
 
+# Log (HUONG_DAN_LOG_DB.md). LOG_ACCESS: api = chỉ dòng truy cập /api/, all = mọi request, off = tắt dòng truy cập.
+LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO").upper()
+LOG_TO_FILE = os.environ.get("LOG_TO_FILE", "1") != "0"
+LOG_DIR = Path(os.environ.get("LOG_DIR") or BACKEND_DIR / "data" / "logs")
+LOG_RETENTION_DAYS = int(os.environ.get("LOG_RETENTION_DAYS", RETENTION_DAYS))
+LOG_ACCESS = os.environ.get("LOG_ACCESS", "api").lower()
+
 KEYS = {"cloudflare": "CLOUDFLARE_API_KEY", "nvidia": "NVIDIA_API_KEY", "openrouter": "OPEN_ROUTER_API_KEY"}
 
 # Thứ tự ưu tiên provider -> model. Override danh sách model bằng CLOUDFLARE_MODELS / NVIDIA_MODELS / OPENROUTER_MODELS.

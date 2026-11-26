@@ -2,6 +2,7 @@
 import logging
 import queue
 import threading
+import time
 from pathlib import Path
 
 from sqlalchemy import select
@@ -38,14 +39,18 @@ def run_job(job_id: int):
         job.status = "running"
         db.commit()
         loai, only_p, only_m, path, name = job.loai_hint, job.only_provider, job.only_model, up.stored_path, up.original_name
+    t0 = time.monotonic()
+    log.info("Job %d bắt đầu: %s (loại %s)", job_id, name, loai or "tự nhận diện")
     try:
         r = pipeline.process(Path(path), loai, only_p, only_m, on_progress=lambda s: _set(job_id, progress=s))
         with SessionLocal() as db:
             rep = ingest(db, r, upload_id=up.id, source_name=name)
-            rid = rep.id
+            rid, status = rep.id, rep.status
         _set(job_id, status="done", report_id=rid, progress=f"xong · {r['provider']}/{r['model']}", finished_at=now())
+        log.info("Job %d xong sau %.1fs: report %d (%s), %s/%s", job_id, time.monotonic() - t0, rid, status,
+                 r["provider"], r["model"])
     except Exception as e:  # lỗi 1 job không được làm chết luồng worker
-        log.exception("Job %s lỗi", job_id)
+        log.exception("Job %s lỗi sau %.1fs", job_id, time.monotonic() - t0)
         _set(job_id, status="failed", error=f"{type(e).__name__}: {e}"[:2000], finished_at=now())
         _drop_failed_image(up.id)
 

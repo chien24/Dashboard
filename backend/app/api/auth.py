@@ -1,6 +1,7 @@
 """Đăng nhập bằng 1 tài khoản dùng chung. Phiên = cookie ký HMAC (không lưu server) nên đăng nhập được ở nhiều máy cùng lúc."""
 import hashlib
 import hmac
+import logging
 import math
 import secrets
 import time
@@ -10,6 +11,7 @@ from fastapi import APIRouter, Body, HTTPException, Request, Response
 from app import config
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
+log = logging.getLogger("auth")
 COOKIE = "ocr_session"
 MAX_AGE = 7 * 24 * 3600
 # Không đặt SESSION_SECRET thì ký bằng chính tài khoản: đổi mật khẩu là mọi phiên cũ hết hạn.
@@ -46,13 +48,16 @@ def login(request: Request, response: Response, username: str = Body(...), passw
         secrets.compare_digest(password.encode(), config.AUTH_PASSWORD.encode())
     if not ok:
         recent = [t for t in _fails.get(ip, []) if t > now - LOCK_S] + [now]
+        log.warning("Đăng nhập sai từ IP %s (lần %d/%d)", ip, len(recent), MAX_FAILS)  # không ghi tên/mật khẩu đã nhập
         if len(recent) >= MAX_FAILS:
             _fails.pop(ip, None)
             _locked[ip] = now + LOCK_S
+            log.warning("Khóa đăng nhập IP %s trong %d giây", ip, LOCK_S)
             raise _lock_error(LOCK_S)
         _fails[ip] = recent
         raise HTTPException(401, {"message": "Sai tài khoản hoặc mật khẩu", "fails": len(recent), "max_fails": MAX_FAILS})
     _fails.pop(ip, None)
+    log.info("Đăng nhập thành công từ IP %s", ip)
     exp = int(time.time()) + MAX_AGE
     response.set_cookie(COOKIE, f"{exp}.{_sign(exp)}", max_age=MAX_AGE, httponly=True, samesite="lax",
                         secure=request.url.scheme == "https")

@@ -2,7 +2,6 @@
 
 Chạy:  cd backend && uvicorn app.main:app --reload   rồi mở http://localhost:8000
 """
-import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -10,14 +9,14 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
-from app import config
+from app import config, logging_setup
 from app.api import auth, dashboard, reports, system, upload
 from app.chatbot import router as chat
 from app.db import SessionLocal, engine, init_db
 from app.ocr.router import reset_provider_disabled_on_start
 from app.services import retention, worker
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
+logging_setup.setup()
 FRONTEND = Path(__file__).resolve().parents[2] / "frontend"
 
 
