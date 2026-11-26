@@ -6,14 +6,14 @@ import math
 import re
 from collections import Counter
 from functools import lru_cache
-from pathlib import Path
 
 import yaml
 
+from app import config
 from app.chatbot import fewshot
 
 log = logging.getLogger("chatbot.docs")
-DOCS = Path(__file__).resolve().parents[3] / "docs" / "user-guide"
+DOCS = config.RESOURCE_DIR / "docs" / "user-guide"
 SKIP = {"README.md", "_inventory.md", "_coverage.md"}  # mục lục / kiểm kê, không phải hướng dẫn (docs/user-guide/README.md)
 K = 4
 MAX_CHUNK = 2500

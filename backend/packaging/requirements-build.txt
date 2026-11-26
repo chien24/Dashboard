@@ -1,0 +1,2 @@
+# Chỉ cần trên máy build (packaging/build.bat), không cần để chạy app
+pyinstaller>=6.10

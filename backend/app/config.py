@@ -1,12 +1,26 @@
-"""Cấu hình đọc từ .env (tìm ở backend/.env, nếu không có thì thư mục cha)."""
+"""Cấu hình đọc từ .env.
+
+Chạy từ source: .env ở backend/.env (không có thì thư mục cha), dữ liệu ở backend/data/.
+Bản đóng gói (OCRDashboard.exe, PyInstaller): .env và data/ ở %LOCALAPPDATA%\\OCRDashboard (đổi bằng biến môi trường
+OCR_DASHBOARD_HOME), tạo lúc chạy lần đầu (backend/launcher.py), không nằm trong bộ cài.
+"""
 import os
+import sys
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from dotenv import load_dotenv
 
+FROZEN = getattr(sys, "frozen", False)  # True khi chạy từ OCRDashboard.exe
 BACKEND_DIR = Path(__file__).resolve().parents[1]
-load_dotenv(BACKEND_DIR / ".env") or load_dotenv(BACKEND_DIR.parent / ".env")
+# Tài nguyên chỉ đọc (frontend/, docs/): source = thư mục gốc repo; bản đóng gói = thư mục _internal (sys._MEIPASS)
+RESOURCE_DIR = Path(getattr(sys, "_MEIPASS", BACKEND_DIR.parent))
+# Chỗ ghi được (.env, data/): source = backend/; bản đóng gói = %LOCALAPPDATA%\OCRDashboard
+APP_HOME = Path(os.environ.get("OCR_DASHBOARD_HOME")
+                or (Path(os.environ.get("LOCALAPPDATA") or Path.home()) / "OCRDashboard" if FROZEN else BACKEND_DIR))
+ENV_FILE = APP_HOME / ".env"
+DATA_DIR = APP_HOME / "data"
+load_dotenv(ENV_FILE) or (not FROZEN and load_dotenv(BACKEND_DIR.parent / ".env"))
 
 
 def _list(name: str, default: list[str]) -> list[str]:
@@ -14,8 +28,8 @@ def _list(name: str, default: list[str]) -> list[str]:
     return [x.strip() for x in v.split(",") if x.strip()] if v else default
 
 
-DATABASE_URL = os.environ.get("DATABASE_URL") or f"sqlite:///{BACKEND_DIR / 'data' / 'ocr.db'}"
-UPLOAD_DIR = Path(os.environ.get("UPLOAD_DIR") or BACKEND_DIR / "data" / "uploads")
+DATABASE_URL = os.environ.get("DATABASE_URL") or f"sqlite:///{DATA_DIR / 'ocr.db'}"
+UPLOAD_DIR = Path(os.environ.get("UPLOAD_DIR") or DATA_DIR / "uploads")
 RETENTION_DAYS = int(os.environ.get("RETENTION_DAYS", 35))
 TIMEZONE = os.environ.get("TIMEZONE", "Asia/Ho_Chi_Minh")
 TZ = ZoneInfo(TIMEZONE)
@@ -31,7 +45,7 @@ SESSION_SECRET = os.environ.get("SESSION_SECRET")
 # Log (HUONG_DAN_LOG_DB.md). LOG_ACCESS: api = chỉ dòng truy cập /api/, all = mọi request, off = tắt dòng truy cập.
 LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO").upper()
 LOG_TO_FILE = os.environ.get("LOG_TO_FILE", "1") != "0"
-LOG_DIR = Path(os.environ.get("LOG_DIR") or BACKEND_DIR / "data" / "logs")
+LOG_DIR = Path(os.environ.get("LOG_DIR") or DATA_DIR / "logs")
 LOG_RETENTION_DAYS = int(os.environ.get("LOG_RETENTION_DAYS", RETENTION_DAYS))
 LOG_ACCESS = os.environ.get("LOG_ACCESS", "api").lower()
 
@@ -78,5 +92,5 @@ CHAT_RATE_LIMIT_PER_MIN = int(os.environ.get("CHAT_RATE_LIMIT_PER_MIN", 10))
 CHAT_RETENTION_DAYS = int(os.environ.get("CHAT_RETENTION_DAYS", 30))  # hội thoại không dùng quá N ngày thì xóa
 # Few-shot động (mục 3 #12): embedding qua Cloudflare Workers AI (dùng key OCR). Rỗng = tắt, dùng ví dụ cố định.
 CHAT_EMBED_MODEL = os.environ.get("CHAT_EMBED_MODEL", "@cf/baai/bge-m3")
-EMBED_CACHE = Path(os.environ.get("EMBED_CACHE") or BACKEND_DIR / "data" / "embeddings.json")  # vector đã embed (docs, few-shot)
+EMBED_CACHE = Path(os.environ.get("EMBED_CACHE") or DATA_DIR / "embeddings.json")  # vector đã embed (docs, few-shot)
 CHAT_FEWSHOT_K = int(os.environ.get("CHAT_FEWSHOT_K", 6))  # số ví dụ SQL đưa vào prompt (+ ví dụ hỏi lại/từ chối luôn có)

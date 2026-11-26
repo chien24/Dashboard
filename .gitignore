@@ -17,3 +17,6 @@ backend/data/
 
 # kết quả chạy scripts/eval_chatbot.py (có câu trả lời và số liệu)
 backend/eval_results/
+# đóng gói (backend/packaging/build.bat)
+backend/packaging/build/
+backend/packaging/dist/

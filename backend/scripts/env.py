@@ -35,8 +35,8 @@ CHECK = {  # biến có giá trị cố định: kiểm trước khi ghi, gõ sa
 
 def env_path() -> Path:
     """Cùng thứ tự với config.py: backend/.env, không có thì .env ở thư mục cha."""
-    p = config.BACKEND_DIR / ".env"
-    return p if p.exists() else config.BACKEND_DIR.parent / ".env"
+    p = config.ENV_FILE
+    return p if p.exists() or config.FROZEN else config.BACKEND_DIR.parent / ".env"
 
 
 def read(p: Path) -> tuple[list[str], str]:
@@ -159,7 +159,7 @@ def main(argv=None):
     terminal.start("env.py", log_args)
     p = env_path()
     if not p.exists():
-        sys.exit(f"Không tìm thấy file .env ({config.BACKEND_DIR / '.env'} hoặc {p}).")
+        sys.exit(f"Không tìm thấy file .env ({config.ENV_FILE} hoặc {p}).")
     args.fn(p, args)
 
 

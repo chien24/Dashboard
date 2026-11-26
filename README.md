@@ -51,6 +51,10 @@ uvicorn app.main:app --reload
 
 Dữ liệu nằm trong `backend/data/` (`ocr.db` và `uploads/`). Xóa thư mục này là về trạng thái trống.
 
+### Cài trên máy không có Python
+
+Đóng gói thành `OCRDashboard-Setup.exe` (Python nằm sẵn trong bộ cài, `.env` và dữ liệu tạo lúc chạy lần đầu): xem [backend/packaging/README.md](backend/packaging/README.md).
+
 ### Mở cho người khác dùng qua link Vercel
 
 Frontend nằm trên Vercel (https://dashboard-frontend-silk-zeta.vercel.app). Vercel chuyển `/api/*` và `/uploads/*` về backend chạy trên máy này qua Cloudflare Quick Tunnel; dữ liệu và API key vẫn ở máy local.

@@ -3,7 +3,6 @@
 Chạy:  cd backend && uvicorn app.main:app --reload   rồi mở http://localhost:8000
 """
 from contextlib import asynccontextmanager
-from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse, RedirectResponse
@@ -17,7 +16,7 @@ from app.ocr.router import reset_provider_disabled_on_start
 from app.services import retention, worker
 
 logging_setup.setup()
-FRONTEND = Path(__file__).resolve().parents[2] / "frontend"
+FRONTEND = config.RESOURCE_DIR / "frontend"
 
 
 def _cleanup():
