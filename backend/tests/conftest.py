@@ -6,6 +6,7 @@ from pathlib import Path
 _TMP = Path(tempfile.mkdtemp(prefix="ocr_test_"))
 os.environ["DATABASE_URL"] = f"sqlite:///{(_TMP / 'test.db').as_posix()}"
 os.environ["UPLOAD_DIR"] = str(_TMP / "uploads")
+os.environ["EMBED_CACHE"] = str(_TMP / "embeddings.json")
 
 import pytest  # noqa: E402
 

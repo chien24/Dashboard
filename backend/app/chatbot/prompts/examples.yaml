@@ -49,6 +49,16 @@
     sql: null
     cau_hoi_lai: "Mình chỉ đọc dữ liệu, không xóa hay sửa được. Bạn mở trang Tàng Kinh Các để xem, sửa tay hoặc xóa report ngày 12/11."
 
+- question: "Tải ảnh report lên kiểu gì?"
+  answer:
+    loai: huong_dan
+    sql: null
+
+- question: "Báo cáo bị đánh dấu cần kiểm tra là sao, sửa ở đâu?"
+  answer:
+    loai: huong_dan
+    sql: null
+
 - question: "Hôm qua HT2 chia đúng bao nhiêu kiện, chiếm bao nhiêu %?"
   answer:
     loai: sql

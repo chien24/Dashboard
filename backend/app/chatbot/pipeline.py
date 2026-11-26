@@ -7,14 +7,15 @@ import time
 from datetime import date
 
 from app import config
-from app.chatbot import checks, context, executor
+from app.chatbot import checks, context, docs, executor
 from app.chatbot.llm import AllModelsFailed, Llm
 from app.chatbot.sql_guard import GuardError, check, wrap_limit
 from app.models import now
 from app.ocr.providers.base import BadOutput, extract_json
 
 log = logging.getLogger("chatbot")
-LOAI = ("sql", "hoi_lai", "ngoai_pham_vi")
+LOAI = ("sql", "hoi_lai", "ngoai_pham_vi", "huong_dan")
+KHONG_CO_DOCS = "Hướng dẫn sử dụng chưa nói tới việc này. Bạn thử hỏi cụ thể hơn: tên trang, tên nút hoặc thông báo đang thấy."
 DEFAULT_ANSWER = "Đây là kết quả truy vấn."
 CHUA_TRA_LOI = ("Mình chưa trả lời được câu này. Bạn thử diễn đạt lại cụ thể hơn: nêu hệ thống (HT1 SCADA hay HT2 DMWCS), "
                 "chỉ số và ngày, ví dụ \"Tỷ lệ REJECT HT2 ngày 12/11\".")
@@ -26,7 +27,9 @@ def parse_plan(text: str) -> dict:
     """JSON của LLM 1 -> plan đã kiểm cấu trúc; sai thì BadOutput (llm.chat nhắc lại / đổi model)."""
     p = extract_json(text)
     if not isinstance(p, dict) or p.get("loai") not in LOAI:
-        raise BadOutput("JSON thiếu 'loai' hợp lệ (sql | hoi_lai | ngoai_pham_vi)")
+        raise BadOutput("JSON thiếu 'loai' hợp lệ (sql | hoi_lai | ngoai_pham_vi | huong_dan)")
+    if p["loai"] == "huong_dan":
+        return p
     if p["loai"] == "sql":
         if not isinstance(p.get("sql"), str) or not p["sql"].strip():
             raise BadOutput("loai = sql nhưng thiếu 'sql'")
@@ -70,6 +73,19 @@ def ask(question: str, history: list[dict] | None = None, today: date | None = N
             plan, out["model_sql"] = llm.chat("sql", messages, parse=parse_plan)
     except AllModelsFailed as e:
         return done() | _all_failed(e)
+
+    if plan["loai"] == "huong_dan":  # hỏi cách dùng: trả lời theo docs/user-guide, không chạy SQL
+        out["loai"] = "huong_dan"
+        found = docs.search(question)
+        if not found:
+            out["answer"] = KHONG_CO_DOCS
+            return done()
+        try:
+            out["answer"], out["model_summary"] = llm.chat("summary", docs.messages(question, found))
+        except AllModelsFailed as e:
+            return done() | _all_failed(e)
+        out["answer"] = (out["answer"] or "").strip() or KHONG_CO_DOCS
+        return done()
 
     for attempt in range(config.CHAT_SQL_RETRIES + 1):
         if plan["loai"] != "sql":

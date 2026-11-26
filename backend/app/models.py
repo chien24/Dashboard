@@ -178,7 +178,7 @@ class ChatMessage(Base):
     conversation_id: Mapped[int] = fk("chat_conversations")
     role: Mapped[str] = mapped_column(String)  # user / assistant
     content: Mapped[str] = mapped_column(Text)
-    loai: Mapped[str | None] = mapped_column(String)  # sql / hoi_lai / ngoai_pham_vi / loi
+    loai: Mapped[str | None] = mapped_column(String)  # sql / hoi_lai / ngoai_pham_vi / huong_dan / loi
     sql: Mapped[str | None] = mapped_column(Text)
     result_preview: Mapped[dict | None] = mapped_column(JSON)  # columns, rows (≤ 50), row_count, truncated, lua_chon
     warnings: Mapped[list | None] = mapped_column(JSON)

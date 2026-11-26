@@ -144,6 +144,65 @@ def test_out_of_scope_runs_no_sql():
     assert r["loai"] == "ngoai_pham_vi" and r["rows"] is None and r["llm_calls"] == 1
 
 
+def test_embed_cached_only_embeds_new_text(monkeypatch, tmp_path):
+    from app.chatbot import fewshot
+
+    calls = []
+
+    def fake(texts):
+        calls.append(list(texts))
+        return [[float(len(t)), 1.0] for t in texts]
+
+    monkeypatch.setattr(config, "EMBED_CACHE", tmp_path / "e.json")
+    monkeypatch.setattr(fewshot, "embed", fake)
+    assert fewshot.embed_cached("docs", ["a", "bb", "a"]) == [[1, 1], [2, 1], [1, 1]]
+    assert calls == [["a", "bb"]]                                    # đoạn trùng chỉ embed 1 lần
+    assert fewshot.embed_cached("docs", ["a", "bb"]) == [[1, 1], [2, 1]] and len(calls) == 1  # lần 2: đọc file
+    fewshot.embed_cached("docs", ["a", "ccc"])
+    assert calls[-1] == ["ccc"]                                      # đoạn sửa: chỉ embed đoạn mới
+    assert len(__import__("json").loads((tmp_path / "e.json").read_text())["docs"]["vectors"]) == 2  # "bb" bị bỏ
+    monkeypatch.setattr(config, "CHAT_EMBED_MODEL", "model-khac")
+    fewshot.embed_cached("docs", ["a"])
+    assert calls[-1] == ["a"]                                        # đổi model: embed lại
+    before = (tmp_path / "e.json").read_text()
+    monkeypatch.setattr(fewshot, "embed", lambda t: 1 / 0)
+    with pytest.raises(ZeroDivisionError):
+        fewshot.embed_cached("docs", ["mới"])
+    assert (tmp_path / "e.json").read_text() == before              # lỗi: không ghi gì
+
+
+def test_docs_chunks_skip_index_and_code_paths():
+    from app.chatbot import docs
+
+    cs = docs.chunks()
+    assert len(cs) > 50 and all("nguon_code" not in c["text"] and "frontend/" not in c["text"] for c in cs)
+    assert not any("Mục lục tài liệu" in c["text"] for c in cs)
+
+
+def test_docs_search_keyword_fallback_finds_upload_guide():
+    from app.chatbot import docs
+
+    found = docs.search("làm sao để OCR một ảnh nhỉ")  # conftest làm embed lỗi -> đếm từ
+    assert any(c["title"] == "Tải ảnh báo cáo lên để hệ thống đọc số liệu" for c in found)
+
+
+def test_huong_dan_answers_from_docs_without_sql():
+    fake = FakeLlm({"loai": "huong_dan"}, "1. Bấm menu \"Truyền Pháp Ảnh\".\nXem thêm: Tải ảnh báo cáo lên")
+    r = pipeline.ask("làm sao để OCR một ảnh nhỉ", today=TODAY, llm=fake)
+    assert r["loai"] == "huong_dan" and r["rows"] is None and r["sql"] is None and r["llm_calls"] == 2
+    assert r["answer"].startswith("1. Bấm menu")
+    prompt = fake.seen[-1][1][1]["content"]
+    assert "<tai_lieu>" in prompt and "Khai Phá Thiên Cơ" in prompt
+
+
+def test_huong_dan_no_docs_found(monkeypatch):
+    from app.chatbot import docs
+
+    monkeypatch.setattr(docs, "search", lambda q: [])
+    r = pipeline.ask("abc", today=TODAY, llm=FakeLlm({"loai": "huong_dan"}))
+    assert r["answer"] == pipeline.KHONG_CO_DOCS and r["llm_calls"] == 1
+
+
 def test_retention_whole_range_skips_sql():
     fake = FakeLlm(plan("SELECT total FROM v_dmwcs_sorted WHERE ngay = '2026-10-01'", "2026-10-01"))
     r = pipeline.ask("Tổng kiện HT2 ngày 01/10?", today=TODAY, llm=fake)
