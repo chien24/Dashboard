@@ -18,12 +18,21 @@ if not exist "%VENV%\Scripts\python.exe" (
 )
 "%VENV%\Scripts\python.exe" -m pip install --upgrade pip >nul || goto :err
 "%VENV%\Scripts\python.exe" -m pip install -r ..\requirements.txt -r requirements-build.txt || goto :err
+rem Python conda/miniconda de DLL (sqlite3, ffi, expat...) o <base>\Library\bin, khong nam canh .pyd:
+rem them vao PATH de PyInstaller tim thay va goi vao, neu khong may nguoi dung se loi "DLL load failed ... _sqlite3"
+for /f "delims=" %%b in ('call "%VENV%\Scripts\python.exe" -c "import sys; print(sys.base_prefix)"') do set "BASE=%%b"
+if exist "%BASE%\Library\bin" (
+  echo     Python conda: them %BASE%\Library\bin vao PATH khi dong goi
+  set "PATH=%BASE%\Library\bin;%PATH%"
+)
 
 echo [2/4] PyInstaller: dist\OCRDashboard\OCRDashboard.exe
 "%VENV%\Scripts\python.exe" -m PyInstaller --noconfirm --clean --distpath dist --workpath build\work ocr_dashboard.spec || goto :err
 
 echo [3/4] Kiem tra nhanh exe
 dist\OCRDashboard\OCRDashboard.exe help >nul || goto :err
+rem "help" khong dung toi sqlite: kiem tra rieng DLL cua sqlite3 (thieu thi exe khong mo duoc DB)
+if not exist "dist\OCRDashboard\_internal\sqlite3.dll" goto :nodll
 if exist "dist\OCRDashboard\_internal\.env" goto :leak
 if exist "dist\OCRDashboard\_internal\data" goto :leak
 
@@ -48,6 +57,11 @@ exit /b 0
 
 :leak
 echo [LOI] Trong goi co .env hoac data: KHONG duoc phat hanh ban nay. Kiem tra lai ocr_dashboard.spec
+if not defined NO_PAUSE pause
+exit /b 1
+
+:nodll
+echo [LOI] Trong goi thieu sqlite3.dll: exe se khong mo duoc database. Kiem tra Python dung de build.
 if not defined NO_PAUSE pause
 exit /b 1
 
