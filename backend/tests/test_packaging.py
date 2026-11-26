@@ -23,11 +23,14 @@ def test_frozen_paths(tmp_path):
             "from app import config as c\n"
             "print(c.APP_HOME); print(c.ENV_FILE); print(c.RESOURCE_DIR); print(c.DATABASE_URL); print(c.UPLOAD_DIR)"
             % (tmp_path / "meipass"))
-    env = {"PATH": os.environ.get("PATH", ""), "LOCALAPPDATA": str(tmp_path / "local")}
+    # PYTHONIOENCODING: thư mục tạm có thể chứa chữ có dấu (user "Chiến"), pipe mặc định cp1252 thì print lỗi
+    env = {"PATH": os.environ.get("PATH", ""), "LOCALAPPDATA": str(tmp_path / "local"), "PYTHONIOENCODING": "utf-8"}
     if os.name == "nt":
         env["SYSTEMROOT"] = os.environ.get("SYSTEMROOT", "")
-    out = subprocess.run([sys.executable, "-c", code], cwd=BACKEND, env=env, capture_output=True, text=True,
-                         timeout=60).stdout.splitlines()
+    r = subprocess.run([sys.executable, "-c", code], cwd=BACKEND, env=env, capture_output=True, text=True,
+                       encoding="utf-8", timeout=60)
+    assert r.returncode == 0, r.stderr
+    out = r.stdout.splitlines()
     home = tmp_path / "local" / "OCRDashboard"
     assert out[0] == str(home)
     assert out[1] == str(home / ".env")
