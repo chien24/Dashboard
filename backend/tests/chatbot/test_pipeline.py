@@ -74,6 +74,28 @@ def test_views_exist_and_examples_run():
             executor.run(check(ex["answer"]["sql"]))  # chạy được trên view thật, qua được guard
 
 
+def test_fewshot_picks_nearest_and_keeps_non_sql(monkeypatch):
+    from app.chatbot import fewshot
+
+    exs = [{"question": q, "answer": {"loai": "sql"}} for q in ("a", "b", "c")] + [
+        {"question": "x", "answer": {"loai": "hoi_lai"}}]
+    vec = {"a": [1, 0], "b": [0, 1], "c": [0.6, 0.8], "hỏi": [0, 1]}
+    monkeypatch.setattr(fewshot, "embed", lambda texts: [vec[t] for t in texts])
+    fewshot._bank.cache_clear()
+    got = [e["question"] for e in fewshot.pick("hỏi", exs, k=2)]
+    fewshot._bank.cache_clear()
+    assert got == ["c", "b", "x"]  # giống nhất (b) đứng cuối, sát câu hỏi; hoi_lai luôn có
+
+
+def test_fewshot_falls_back_when_embedding_fails():
+    from app.chatbot import fewshot
+
+    exs = context.examples()
+    got = fewshot.pick("bất kỳ", exs, k=3)  # conftest làm embed lỗi
+    assert got[:3] == [e for e in exs if e["answer"]["loai"] == "sql"][:3]
+    assert all(e in got for e in exs if e["answer"]["loai"] != "sql")
+
+
 def test_prompt_has_today_values_and_question_block():
     msgs = context.sql_messages("Tỷ lệ NoRead hôm qua?", [], TODAY)
     sys = msgs[0]["content"]

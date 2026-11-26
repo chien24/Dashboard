@@ -69,3 +69,6 @@ CHAT_SUMMARY_ROWS = int(os.environ.get("CHAT_SUMMARY_ROWS", 50))
 CHAT_HISTORY_TURNS = int(os.environ.get("CHAT_HISTORY_TURNS", 6))
 CHAT_RATE_LIMIT_PER_MIN = int(os.environ.get("CHAT_RATE_LIMIT_PER_MIN", 10))
 CHAT_RETENTION_DAYS = int(os.environ.get("CHAT_RETENTION_DAYS", 30))  # hội thoại không dùng quá N ngày thì xóa
+# Few-shot động (mục 3 #12): embedding qua Cloudflare Workers AI (dùng key OCR). Rỗng = tắt, dùng ví dụ cố định.
+CHAT_EMBED_MODEL = os.environ.get("CHAT_EMBED_MODEL", "@cf/baai/bge-m3")
+CHAT_FEWSHOT_K = int(os.environ.get("CHAT_FEWSHOT_K", 6))  # số ví dụ SQL đưa vào prompt (+ ví dụ hỏi lại/từ chối luôn có)

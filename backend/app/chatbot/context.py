@@ -8,7 +8,7 @@ from pathlib import Path
 import yaml
 
 from app import config
-from app.chatbot import executor
+from app.chatbot import executor, fewshot
 
 PROMPTS = Path(__file__).parent / "prompts"
 THU = ["thứ Hai", "thứ Ba", "thứ Tư", "thứ Năm", "thứ Sáu", "thứ Bảy", "Chủ nhật"]
@@ -77,9 +77,9 @@ def values_block(v: dict) -> str:
     return f"day_chuyen_key: {dc}\nloai_key (thêm UNKNOWN = chưa phân loại): {loai}\nNgày có dữ liệu: {days}"
 
 
-def examples_block() -> str:
+def examples_block(question: str) -> str:
     out = ["Ví dụ (giả sử hôm nay 2026-11-19, thứ Năm; luôn tính ngày theo Hôm nay thật):"]
-    for ex in examples():
+    for ex in fewshot.pick(question, examples()):
         ans = {k: v for k, v in ex["answer"].items() if k != "giai_thich"}  # định dạng đã nêu ở luật, bớt token
         out.append(f"Hỏi: {ex['question']}\n{json.dumps(ans, ensure_ascii=False, separators=(',', ':'))}")
     return "\n".join(out)
@@ -101,7 +101,7 @@ def sql_messages(question: str, history: list[dict], today: date) -> list[dict]:
         "# Thời gian\n" + time_block(today),
         prompt_file("schema.md"),
         "# Dữ liệu hiện có\n" + values_block(db_values()),
-        "# " + examples_block(),
+        "# " + examples_block(question),
         history_block(history),
     ] if x)
     return [{"role": "system", "content": system}, {"role": "user", "content": f"<cau_hoi>{question}</cau_hoi>"}]

@@ -188,8 +188,8 @@ document.querySelectorAll("[data-csv]").forEach(b => b.addEventListener("click",
 }));
 document.querySelectorAll(".tabs button").forEach(b => b.addEventListener("click", () => {
   document.querySelectorAll(".tabs button").forEach(x => x.setAttribute("aria-selected", x === b));
-  $("ht1").hidden = b.dataset.tab !== "ht1"; $("ht2").hidden = b.dataset.tab !== "ht2";
-  renderH1(); renderH2(); // tab vừa hiện mới đo được bề rộng
+  document.querySelectorAll(".tabs button").forEach(x => $(x.dataset.tab).hidden = x !== b);
+  renderH1(); renderH2(); renderTQ(); // tab vừa hiện mới đo được bề rộng
 }));
 function initRange(prefix, allDays, render) {
   // Mặc định: lùi về ngày có dữ liệu cũ nhất để không cắt mất báo cáo cũ hơn (vd capacity 05–10/11 khi Scanner là 15/11),
@@ -199,7 +199,7 @@ function initRange(prefix, allDays, render) {
   $(prefix + "-to").value = last; $(prefix + "-from").value = from < addDays(last, -34) ? addDays(last, -34) : from;
   [prefix + "-from", prefix + "-to"].forEach(id => $(id).addEventListener("change", () => { st[prefix].kpi = null; render(); }));
 }
-const st = { h1: { kpi: null }, h2: { kpi: null } };
+const st = { h1: { kpi: null }, h2: { kpi: null }, tq: { kpi: null } };
 function rangeDays(prefix) {
   let a = $(prefix + "-from").value, b = $(prefix + "-to").value;
   if (!a || !b) return [];
@@ -327,8 +327,47 @@ function renderH2() {
 }
 initRange("h2", [...SORTED.keys(), ...CAP.keys(), ...BCR.keys()], renderH2);
 renderH2();
-if (location.hash === "#ht2") document.querySelector('[data-tab="ht2"]').click(); // mở thẳng tab HT2
-let rz; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { renderH1(); renderH2(); }, 150); });
+
+// ---------------------------------------------------------------- Tổng quan = HT1 (mọi dây chuyền) + HT2
+const add = (a, b) => has(a) || has(b) ? (a || 0) + (b || 0) : null; // thiếu 1 hệ thống thì lấy phần còn lại
+const h1Max = recs => sum(recs.filter(x => x.line.key !== "outbound"), x => x.max); // Công suất MAX không tính Outbound
+const h1Of = recs => ({ all: sum(recs, x => x.all), correct: sum(recs, x => x.correct), reject: sum(recs, x => x.reject),
+                        hours: sum(recs.filter(x => has(x.hours)), x => x.hours) });
+const h2Of = D => { const R = D.filter(x => x.s);
+  return { all: sum(R, x => x.all), correct: sum(R, x => x.correct), reject: sum(R, x => x.reject), hours: sum(D.filter(x => has(x.hours)), x => x.hours) }; };
+function tqTiles(a, b, max, maxNote, avg, avgNote) {
+  const split = (k, f = fInt) => `HT1 ${f(a[k])} · HT2 ${f(b[k])}`;
+  const all = add(a.all, b.all), rej = add(a.reject, b.reject), rate = all ? rej / all : null;
+  return tile("ALL", fInt(all), split("all"))
+    + tile("CORRECT", withPct(add(a.correct, b.correct), has(rate) ? 1 - rate : null), split("correct"))
+    + tile("REJECT", withPct(rej, rate), split("reject"))
+    + tile("Công suất MAX · HT1", fInt(max), maxNote)
+    + tile("Công suất AVG · HT2", has(avg) ? fDec(avg) : DASH, avgNote)
+    + tile("Thời gian sử dụng", fH(add(a.hours, b.hours)), split("hours", fH));
+}
+function renderTQ() {
+  const days = rangeDays("tq"), fullDate = d => d ? `${dm(d)}/${d.slice(0, 4)}` : DASH;
+  const h1Days = new Set(H1.map(x => x.day));
+  // Dòng 1: ngày mới nhất có sản lượng của cả HT1 và HT2 (cùng một ngày); không có thì ngày mới nhất có sản lượng của 1 bên;
+  // ngày chỉ có Capacity (không có ALL) xếp cuối
+  const rev = [...days].reverse();
+  const day = rev.find(d => h1Days.has(d) && SORTED.has(d)) || rev.find(d => h1Days.has(d) || SORTED.has(d)) || rev.find(d => CAP.has(d));
+  const k1 = H1.filter(x => x.day === day), k2 = h2Day(day || "");
+  $("tq-day").textContent = `Chỉ số ngày ${fullDate(day)} · HT1 + HT2`;
+  $("tq-kpis").innerHTML = tqTiles(h1Of(k1), h2Of([k2]), h1Max(k1), "bưu kiện/giờ · tổng các dây chuyền",
+                                   k2.avg, "bưu kiện/giờ · báo cáo Capacity");
+  // Dòng 2: cả khoảng ngày. MAX = ngày cao nhất; AVG = trung bình các ngày có Capacity
+  const r1 = H1.filter(x => days.includes(x.day)), D = days.map(h2Day), A = D.filter(x => has(x.avg));
+  const peak = days.map(d => [d, h1Max(r1.filter(x => x.day === d))]).filter(([, v]) => has(v)).sort((p, q) => q[1] - p[1])[0];
+  $("tq-range-day").textContent = `Tổng từ ${fullDate(days[0])} đến ${fullDate(days.at(-1))} · HT1 + HT2`;
+  $("tq-range-kpis").innerHTML = tqTiles(h1Of(r1), h2Of(D), peak?.[1], peak ? `bưu kiện/giờ · cao nhất, ngày ${fullDate(peak[0])}` : "bưu kiện/giờ",
+    A.length ? sum(A, x => x.avg) / A.length : null, `bưu kiện/giờ · trung bình ${A.length} ngày có báo cáo Capacity`);
+}
+initRange("tq", [...H1.map(x => x.day), ...SORTED.keys(), ...CAP.keys()], renderTQ);
+renderTQ();
+const tab = document.querySelector(`.tabs [data-tab="${location.hash.slice(1)}"]`);
+if (tab) tab.click(); // index.html#ht1 / #ht2: mở thẳng tab đó
+let rz; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { renderH1(); renderH2(); renderTQ(); }, 150); });
 })().catch(e => {
   document.querySelector("main").prepend(Object.assign(document.createElement("p"), { className: "err", textContent: "Không tải được dữ liệu: " + e.message }));
 });

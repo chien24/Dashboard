@@ -20,12 +20,27 @@
   <p class="sub">Phòng Kỹ thuật · Chi nhánh Khai thác 3 · HT1 SCADA và HT2 DMWCS</p>
 
   <div class="tabs" role="tablist">
-    <button role="tab" aria-selected="true" data-tab="ht1">HT1 – SCADA</button>
+    <button role="tab" aria-selected="true" data-tab="tq">Tổng quan</button>
+    <button role="tab" aria-selected="false" data-tab="ht1">HT1 – SCADA</button>
     <button role="tab" aria-selected="false" data-tab="ht2">HT2 – DMWCS (CBS)</button>
   </div>
 
+  <!-- ===================== Tổng quan = HT1 + HT2 ===================== -->
+  <section id="tq">
+    <div class="filters">
+      <label>Từ ngày <input type="date" id="tq-from"></label>
+      <label>Đến ngày <input type="date" id="tq-to"></label>
+      <span class="hint">Cộng HT1 (mọi dây chuyền) và HT2. Dòng dưới mỗi ô ghi phần của từng hệ thống.</span>
+    </div>
+    <p class="kpi-day" id="tq-day"></p>
+    <div class="kpis" id="tq-kpis"></div>
+    <p class="kpi-day" id="tq-range-day"></p>
+    <div class="kpis" id="tq-range-kpis"></div>
+    <p class="note">Công suất MAX (HT1) không tính dây chuyền Outbound. Xem biểu đồ và bảng chi tiết ở tab HT1, HT2.</p>
+  </section>
+
   <!-- ===================== HT1 ===================== -->
-  <section id="ht1">
+  <section id="ht1" hidden>
     <div class="filters">
       <label>Từ ngày <input type="date" id="h1-from"></label>
       <label>Đến ngày <input type="date" id="h1-to"></label>
@@ -86,6 +101,6 @@
 
 <script src="../js/api.js?v=9"></script>
 <script src="../js/chat-widget.js?v=3"></script>
-<script src="../js/dashboard.js?v=5"></script>
+<script src="../js/dashboard.js?v=6"></script>
 </body>
 </html>

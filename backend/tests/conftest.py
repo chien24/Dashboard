@@ -26,6 +26,17 @@ def client():
     return c
 
 
+@pytest.fixture(autouse=True)
+def no_embedding(monkeypatch):
+    """Few-shot động không gọi Cloudflare trong test: embed lỗi -> fewshot dùng K ví dụ đầu."""
+    from app.chatbot import fewshot
+
+    def fail(texts):
+        raise RuntimeError("test: tắt embedding")
+
+    monkeypatch.setattr(fewshot, "embed", fail)
+
+
 @pytest.fixture
 def clean_db():
     """DB trống cho mỗi test."""

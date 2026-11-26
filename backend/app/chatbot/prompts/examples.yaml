@@ -1,4 +1,5 @@
-# Tối đa 8 ví dụ (prompt sinh SQL ~3K token). Giả sử hôm nay = 2026-11-19 (thứ Năm).
+# Kho ví dụ cho few-shot động (fewshot.py): mỗi câu hỏi chỉ đưa CHAT_FEWSHOT_K ví dụ SQL gần nhất + mọi ví dụ hoi_lai/ngoai_pham_vi.
+# Giả sử hôm nay = 2026-11-19 (thứ Năm). Không chép câu hỏi của tests/chatbot/eval_questions.yaml vào đây (lộ đáp án).
 # Mọi SQL ở đây được test chạy được trên các view (tests/chatbot/test_pipeline.py).
 - question: "Tỷ lệ NoRead 7 ngày gần nhất?"
   answer:
@@ -47,3 +48,150 @@
     loai: ngoai_pham_vi
     sql: null
     cau_hoi_lai: "Mình chỉ đọc dữ liệu, không xóa hay sửa được. Bạn mở trang Tàng Kinh Các để xem, sửa tay hoặc xóa report ngày 12/11."
+
+- question: "Hôm qua HT2 chia đúng bao nhiêu kiện, chiếm bao nhiêu %?"
+  answer:
+    loai: sql
+    sql: "SELECT ngay, total AS all_kien, correct_chute + pda AS correct_kien, ROUND(100.0 * (correct_chute + pda) / total, 2) AS ty_le_correct_pct FROM v_dmwcs_sorted WHERE ngay = '2026-11-18'"
+    pham_vi: {he_thong: HT2, views: [v_dmwcs_sorted], tu_ngay: "2026-11-18", den_ngay: "2026-11-18"}
+    giai_thich: "CORRECT HT2 = correct_chute + pda, ngày hôm qua"
+
+- question: "NoPostOffice ngày 14/11?"
+  answer:
+    loai: sql
+    sql: "SELECT ngay, no_post_office_so_luong AS no_post_office_kien, no_post_office_ty_le AS ty_le_no_post_office_pct FROM v_dmwcs_sorted WHERE ngay = '2026-11-14'"
+    pham_vi: {he_thong: HT2, views: [v_dmwcs_sorted], tu_ngay: "2026-11-14", den_ngay: "2026-11-14"}
+    giai_thich: "Số kiện và tỷ lệ NoPostOffice (trên RejectChute) ngày 14/11"
+
+- question: "Công suất AVG từng ngày tuần này"
+  answer:
+    loai: sql
+    sql: "SELECT ngay, cong_suat AS cong_suat_avg_kien_h FROM v_dmwcs_capacity WHERE ngay BETWEEN '2026-11-16' AND '2026-11-19' ORDER BY ngay"
+    pham_vi: {he_thong: HT2, views: [v_dmwcs_capacity], tu_ngay: "2026-11-16", den_ngay: "2026-11-19"}
+    giai_thich: "Công suất AVG mỗi ngày của tuần này"
+
+- question: "Ngày nào tháng này công suất AVG cao nhất?"
+  answer:
+    loai: sql
+    sql: "SELECT ngay, cong_suat AS cong_suat_avg_kien_h FROM v_dmwcs_capacity WHERE ngay BETWEEN '2026-11-01' AND '2026-11-19' ORDER BY cong_suat DESC LIMIT 1"
+    pham_vi: {he_thong: HT2, views: [v_dmwcs_capacity], tu_ngay: "2026-11-01", den_ngay: "2026-11-19"}
+    giai_thich: "Ngày có Công suất AVG cao nhất tháng này"
+
+- question: "So sánh tổng kiện HT2 tuần này với tuần trước"
+  answer:
+    loai: sql
+    sql: "SELECT 'tuan_nay' AS ky, MIN(ngay) AS tu_ngay, MAX(ngay) AS den_ngay, COUNT(DISTINCT ngay) AS so_ngay_co_du_lieu, SUM(total) AS all_kien FROM v_dmwcs_sorted WHERE ngay BETWEEN '2026-11-16' AND '2026-11-19' UNION ALL SELECT 'tuan_truoc', MIN(ngay), MAX(ngay), COUNT(DISTINCT ngay), SUM(total) FROM v_dmwcs_sorted WHERE ngay BETWEEN '2026-11-09' AND '2026-11-15'"
+    pham_vi: {he_thong: HT2, views: [v_dmwcs_sorted], tu_ngay: "2026-11-09", den_ngay: "2026-11-19"}
+    giai_thich: "Tổng ALL HT2 của tuần này và tuần trước, kèm số ngày có dữ liệu mỗi kỳ"
+
+- question: "Thời gian sử dụng HT2 từng ngày tuần trước"
+  answer:
+    loai: sql
+    sql: "SELECT s.ngay, s.total AS all_kien, c.cong_suat AS cong_suat_avg_kien_h, ROUND(1.0 * s.total / c.cong_suat, 2) AS thoi_gian_su_dung_gio FROM v_dmwcs_sorted s JOIN v_dmwcs_capacity c ON c.ngay = s.ngay WHERE s.ngay BETWEEN '2026-11-09' AND '2026-11-15' ORDER BY s.ngay"
+    pham_vi: {he_thong: HT2, views: [v_dmwcs_sorted, v_dmwcs_capacity], tu_ngay: "2026-11-09", den_ngay: "2026-11-15"}
+    giai_thich: "Thời gian sử dụng HT2 = ALL / Công suất AVG cùng ngày, mỗi ngày tuần trước"
+
+- question: "BCR 3 ngày 12/11 đọc lỗi bao nhiêu lượt?"
+  answer:
+    loai: sql
+    sql: "SELECT ngay, bcr_no, total AS tong_luot, failed AS luot_loi, rate AS rate_pct FROM v_dmwcs_bcr WHERE bcr_no = 3 AND ngay = '2026-11-12'"
+    pham_vi: {he_thong: HT2, views: [v_dmwcs_bcr], tu_ngay: "2026-11-12", den_ngay: "2026-11-12"}
+    giai_thich: "Số lượt đọc lỗi và rate của BCR 3 ngày 12/11"
+
+- question: "Rate đọc mã chung của tất cả BCR tuần trước"
+  answer:
+    loai: sql
+    sql: "SELECT MIN(ngay) AS tu_ngay, MAX(ngay) AS den_ngay, COUNT(DISTINCT ngay) AS so_ngay_co_du_lieu, SUM(success) AS luot_thanh_cong, SUM(total) AS tong_luot, ROUND(100.0 * SUM(success) / SUM(total), 2) AS rate_pct FROM v_dmwcs_bcr WHERE ngay BETWEEN '2026-11-09' AND '2026-11-15'"
+    pham_vi: {he_thong: HT2, views: [v_dmwcs_bcr], tu_ngay: "2026-11-09", den_ngay: "2026-11-15"}
+    giai_thich: "Rate có trọng số = tổng success / tổng total của mọi BCR tuần trước"
+
+- question: "7 ngày gần nhất có lúc nào BCR đọc dưới 90% không?"
+  answer:
+    loai: sql
+    sql: "SELECT ngay, bcr_no, rate AS rate_pct, failed AS luot_loi FROM v_dmwcs_bcr WHERE rate < 90 AND ngay BETWEEN '2026-11-13' AND '2026-11-19' ORDER BY ngay, bcr_no"
+    pham_vi: {he_thong: HT2, views: [v_dmwcs_bcr], tu_ngay: "2026-11-13", den_ngay: "2026-11-19"}
+    giai_thich: "Các cặp ngày–BCR có rate dưới 90% trong 7 ngày gần nhất"
+
+- question: "Danh sách máng NoChute ngày 13/11"
+  answer:
+    loai: sql
+    sql: "SELECT ngay, chute_no, co_the_bi_cat FROM v_dmwcs_no_chute WHERE ngay = '2026-11-13' ORDER BY chute_no"
+    pham_vi: {he_thong: HT2, views: [v_dmwcs_no_chute], tu_ngay: "2026-11-13", den_ngay: "2026-11-13"}
+    giai_thich: "Các máng trong danh sách NoChute ngày 13/11, kèm cờ danh sách bị cắt"
+
+- question: "Máng nào bị NoChute nhiều ngày nhất tháng này?"
+  answer:
+    loai: sql
+    sql: "SELECT chute_no, COUNT(DISTINCT ngay) AS so_ngay_xuat_hien, MAX(co_the_bi_cat) AS co_the_bi_cat FROM v_dmwcs_no_chute WHERE ngay BETWEEN '2026-11-01' AND '2026-11-19' GROUP BY chute_no ORDER BY so_ngay_xuat_hien DESC, chute_no LIMIT 10"
+    pham_vi: {he_thong: HT2, views: [v_dmwcs_no_chute], tu_ngay: "2026-11-01", den_ngay: "2026-11-19"}
+    giai_thich: "Đếm số ngày mỗi máng xuất hiện trong NoChute tháng này, 10 máng nhiều nhất"
+
+- question: "Inbound ngày 12/11 có bao nhiêu bưu kiện bất thường, tỷ lệ bao nhiêu?"
+  answer:
+    loai: sql
+    sql: "SELECT ngay, day_chuyen, so_luong_goi_theo_luoi AS goi_theo_luoi_kien, so_buu_kien_bat_thuong AS bat_thuong_kien, ty_le_bat_thuong AS ty_le_bat_thuong_pct FROM v_scada_summary WHERE day_chuyen_key = 'inbound' AND ngay = '2026-11-12'"
+    pham_vi: {he_thong: HT1, views: [v_scada_summary], tu_ngay: "2026-11-12", den_ngay: "2026-11-12"}
+    giai_thich: "Bưu kiện bất thường và tỷ lệ bất thường của Inbound ngày 12/11 (1 dòng nên dùng cột tỷ lệ có sẵn)"
+
+- question: "Thời gian quét trung bình của từng dây chuyền hôm qua"
+  answer:
+    loai: sql
+    sql: "SELECT ngay, day_chuyen, thoi_gian_quet_trung_binh AS thoi_gian_quet_tb_giay FROM v_scada_summary WHERE ngay = '2026-11-18' ORDER BY day_chuyen"
+    pham_vi: {he_thong: HT1, views: [v_scada_summary], tu_ngay: "2026-11-18", den_ngay: "2026-11-18"}
+    giai_thich: "Thời gian quét trung bình (giây) mỗi dây chuyền HT1 hôm qua"
+
+- question: "HT1 ngày 12/11 mỗi dây chuyền chạy khoảng mấy tiếng?"
+  answer:
+    loai: sql
+    sql: "SELECT ngay, day_chuyen, so_luong_da_quet AS all_kien, cong_suat_cao_nhat_1h AS cong_suat_max_kien_h, ROUND(1.0 * so_luong_da_quet / cong_suat_cao_nhat_1h, 2) AS thoi_gian_su_dung_gio FROM v_scada_summary WHERE ngay = '2026-11-12' ORDER BY day_chuyen"
+    pham_vi: {he_thong: HT1, views: [v_scada_summary], tu_ngay: "2026-11-12", den_ngay: "2026-11-12"}
+    giai_thich: "Thời gian sử dụng ước tính HT1 = ALL / Công suất MAX, theo dây chuyền ngày 12/11"
+
+- question: "Số kiện quét của Inbound theo từng ngày tháng này"
+  answer:
+    loai: sql
+    sql: "SELECT ngay, so_luong_da_quet AS all_kien FROM v_scada_summary WHERE day_chuyen_key = 'inbound' AND ngay BETWEEN '2026-11-01' AND '2026-11-19' ORDER BY ngay"
+    pham_vi: {he_thong: HT1, views: [v_scada_summary], tu_ngay: "2026-11-01", den_ngay: "2026-11-19"}
+    giai_thich: "ALL của Inbound mỗi ngày trong tháng này"
+
+- question: "Dây chuyền nào có tỷ lệ bất thường cao nhất tuần trước?"
+  answer:
+    loai: sql
+    sql: "SELECT MAX(day_chuyen) AS day_chuyen, COUNT(DISTINCT ngay) AS so_ngay_co_du_lieu, SUM(so_buu_kien_bat_thuong) AS bat_thuong_kien, ROUND(100.0 * SUM(so_buu_kien_bat_thuong) / SUM(so_luong_goi_theo_luoi), 2) AS ty_le_bat_thuong_pct FROM v_scada_summary WHERE ngay BETWEEN '2026-11-09' AND '2026-11-15' GROUP BY day_chuyen_key ORDER BY ty_le_bat_thuong_pct DESC"
+    pham_vi: {he_thong: HT1, views: [v_scada_summary], tu_ngay: "2026-11-09", den_ngay: "2026-11-15"}
+    giai_thich: "Tỷ lệ bất thường có trọng số theo dây chuyền tuần trước, cao nhất đứng đầu"
+
+- question: "Các loại bất thường của toàn HT1 trong 2 tuần qua"
+  answer:
+    loai: sql
+    sql: "SELECT loai_key, loai_vi, SUM(so_luong) AS so_luong_kien, COUNT(DISTINCT ngay) AS so_ngay_co_du_lieu FROM v_scada_abnormal WHERE ngay BETWEEN '2026-11-06' AND '2026-11-19' GROUP BY loai_key, loai_vi ORDER BY so_luong_kien DESC"
+    pham_vi: {he_thong: HT1, views: [v_scada_abnormal], tu_ngay: "2026-11-06", den_ngay: "2026-11-19"}
+    giai_thich: "Tổng số kiện theo loại bất thường, cộng mọi dây chuyền, 14 ngày qua"
+
+- question: "Không có mã vạch của CBS2 tầng 1 tuần trước bao nhiêu kiện?"
+  answer:
+    loai: sql
+    sql: "SELECT MIN(ngay) AS tu_ngay, MAX(ngay) AS den_ngay, COUNT(DISTINCT ngay) AS so_ngay_co_du_lieu, SUM(so_luong) AS no_barcode_kien FROM v_scada_abnormal WHERE day_chuyen_key = 'cbs2 1st layer' AND loai_key = 'NO_BARCODE' AND ngay BETWEEN '2026-11-09' AND '2026-11-15'"
+    pham_vi: {he_thong: HT1, views: [v_scada_abnormal], tu_ngay: "2026-11-09", den_ngay: "2026-11-15"}
+    giai_thich: "Tổng kiện Không Có Mã Vạch của CBS2 tầng 1 tuần trước"
+
+- question: "Tuần trước có bất thường nào chưa phân loại được không?"
+  answer:
+    loai: sql
+    sql: "SELECT ngay, day_chuyen, loai_vi, so_luong AS so_luong_kien FROM v_scada_abnormal WHERE loai_key = 'UNKNOWN' AND ngay BETWEEN '2026-11-09' AND '2026-11-15' ORDER BY ngay"
+    pham_vi: {he_thong: HT1, views: [v_scada_abnormal], tu_ngay: "2026-11-09", den_ngay: "2026-11-15"}
+    giai_thich: "Các dòng loại UNKNOWN (chưa phân loại được) tuần trước"
+
+- question: "Tháng này ngày nào chưa có ảnh Sorted?"
+  answer:
+    loai: sql
+    sql: "WITH RECURSIVE d(ngay) AS (SELECT '2026-11-01' UNION ALL SELECT date(ngay, '+1 day') FROM d WHERE ngay < '2026-11-19') SELECT ngay AS ngay_thieu FROM d WHERE ngay NOT IN (SELECT ngay FROM v_report_quality WHERE loai = 'dmwcs_sorted' AND dang_hien_thi = 1) ORDER BY ngay"
+    pham_vi: {he_thong: HT2, views: [v_report_quality], tu_ngay: "2026-11-01", den_ngay: "2026-11-19"}
+    giai_thich: "Các ngày tháng này không có report Sorted đang hiển thị"
+
+- question: "Report nào đã được sửa tay tháng này?"
+  answer:
+    loai: sql
+    sql: "SELECT ngay, loai, source_name, updated_at FROM v_report_quality WHERE trang_thai = 'da_sua_tay' AND dang_hien_thi = 1 AND ngay BETWEEN '2026-11-01' AND '2026-11-19' ORDER BY ngay"
+    pham_vi: {he_thong: "HT1+HT2", views: [v_report_quality], tu_ngay: "2026-11-01", den_ngay: "2026-11-19"}
+    giai_thich: "Report đang hiển thị có trạng thái đã sửa tay trong tháng này"
