@@ -11,6 +11,7 @@ from app import config, logging_setup, terminal
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 import dbshell  # noqa: E402
+import env  # noqa: E402
 import logs  # noqa: E402
 
 
@@ -81,6 +82,37 @@ def test_logs_loc_theo_muc_va_chu(log_dir, creds, capsys):
     creds()
     logs.main(["--list"])
     assert logging_setup.log_file().name in capsys.readouterr().out
+
+
+def test_env_sua_bang_terminal(tmp_path, monkeypatch, creds, capsys, caplog):
+    from dotenv import dotenv_values
+
+    p = tmp_path / ".env"
+    p.write_bytes("# ghi chú\r\nGROQ_API_KEY=bi-mat-123\r\nLOG_LEVEL=INFO\r\n".encode())
+    monkeypatch.setattr(env, "env_path", lambda: p)
+    run = lambda *a: (creds(), env.main(list(a)))  # noqa: E731
+
+    run("list")
+    out = capsys.readouterr().out
+    assert "GROQ_API_KEY = (có, 10 ký tự)" in out and "bi-mat" not in out and "LOG_LEVEL = INFO" in out
+    run("set", "LOG_LEVEL", "WARNING")
+    run("set", "LOG_DIR", "D:/log có dấu cách #1")
+    assert p.read_bytes().decode() == ('# ghi chú\r\nGROQ_API_KEY=bi-mat-123\r\nLOG_LEVEL=WARNING\r\n'
+                                       'LOG_DIR="D:/log có dấu cách #1"\r\n')  # dòng khác, CRLF, không BOM: giữ nguyên
+    assert dotenv_values(p)["LOG_DIR"] == "D:/log có dấu cách #1"
+    assert len(list(tmp_path.glob(".env.bak-*"))) >= 1
+    with caplog.at_level(logging.INFO, "terminal"):
+        run("set", "GROQ_API_KEY", "khoa-moi-456")
+    assert "khoa-moi" not in caplog.text and "khoa-moi" not in capsys.readouterr().out and "***" in caplog.text
+    assert dotenv_values(p)["GROQ_API_KEY"] == "khoa-moi-456"
+    before = p.read_bytes()
+    with pytest.raises(SystemExit, match="DEBUG / INFO"):
+        run("set", "LOG_LEVEL", "nhieu")
+    with pytest.raises(SystemExit, match="8 ký tự"):
+        run("set", "AUTH_PASSWORD", "ngan")
+    assert p.read_bytes() == before                                      # giá trị sai: không sửa gì
+    run("unset", "LOG_DIR")
+    assert "LOG_DIR" not in dotenv_values(p)
 
 
 def test_file_log_theo_ngay_va_xoa_file_cu(log_dir, monkeypatch):

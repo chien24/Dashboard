@@ -24,8 +24,9 @@ def _ask(tty: bool) -> tuple[str, str]:
     return sys.stdin.readline().rstrip("\r\n"), sys.stdin.readline().rstrip("\r\n")
 
 
-def start(tool: str) -> None:
-    """Gọi đầu mỗi script. Sai TRIES lần (gõ tay) hoặc 1 lần (pipe) -> thoát mã 1."""
+def start(tool: str, log_args: list[str] | None = None) -> None:
+    """Gọi đầu mỗi script. Sai TRIES lần (gõ tay) hoặc 1 lần (pipe) -> thoát mã 1.
+    log_args: đối số ghi vào log (mặc định sys.argv[1:]); script có đối số bí mật thì truyền bản đã che."""
     for s in (sys.stdout, sys.stderr):  # pipe / chuyển hướng trên Windows mặc định cp1252: tiếng Việt thành '?'
         if hasattr(s, "reconfigure"):
             s.reconfigure(encoding="utf-8", errors="replace")
@@ -38,7 +39,8 @@ def start(tool: str) -> None:
     tries = TRIES if tty else 1
     for i in range(1, tries + 1):
         if _ok(*_ask(tty)):
-            log.info("Terminal %s: đăng nhập đúng, chạy: %s", tool, " ".join(sys.argv[1:])[:300])
+            log.info("Terminal %s: đăng nhập đúng, chạy: %s", tool,
+                     " ".join(sys.argv[1:] if log_args is None else log_args)[:300])
             return
         log.warning("Terminal %s: đăng nhập sai (lần %d/%d)", tool, i, tries)
         time.sleep(1)  # làm chậm việc dò mật khẩu
