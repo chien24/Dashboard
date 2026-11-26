@@ -132,7 +132,9 @@ async function loadList() {
   const groups = GROUPS.map(([max, ten]) => [ten, []]);
   for (const it of items) groups[GROUPS.findIndex(([max]) => ageDays(it.updated_at) <= max)][1].push(it);
   box.innerHTML = groups.filter(([, a]) => a.length).map(([ten, a]) => `<div class="conv-group"><h2>${ten}</h2>`
-    + a.map(it => `<button class="conv" type="button" data-conv="${+it.conversation_id}" title="${escHtml(it.title)}">${escHtml(it.title)}</button>`).join("")
+    + a.map(it => `<div class="conv-row"><button class="conv" type="button" data-conv="${+it.conversation_id}" title="${escHtml(it.title)}">${escHtml(it.title)}</button>`
+      + `<button class="conv-act" type="button" data-rename="${+it.conversation_id}" data-title="${escHtml(it.title)}" title="Đổi tên" aria-label="Đổi tên: ${escHtml(it.title)}">✎</button>`
+      + `<button class="conv-act" type="button" data-del="${+it.conversation_id}" title="Xóa" aria-label="Xóa: ${escHtml(it.title)}">🗑</button></div>`).join("")
     + `</div>`).join("");
   markActive();
 }
@@ -161,9 +163,25 @@ cancelBtn.onclick = () => pending && pending.abort();
 document.addEventListener("click", e => {
   const b = e.target.closest("[data-choice]");
   if (b) return ask(b.dataset.choice);
+  const rn = e.target.closest("[data-rename]");
+  if (rn) return renameConv(+rn.dataset.rename, rn.dataset.title);
+  const del = e.target.closest("[data-del]");
+  if (del) return deleteConv(+del.dataset.del);
   const c = e.target.closest("[data-conv]");
   if (c && +c.dataset.conv !== convId) { openConv(+c.dataset.conv); toggleSide(false); }
 });
+async function renameConv(id, old) {
+  const t = prompt("Tên mới cho cuộc trò chuyện (để trống = dùng câu hỏi đầu tiên):", old);
+  if (t === null) return;
+  try { await api.renameConversation(id, t); } catch (e) { alert(`Không đổi tên được: ${e.message}`); }
+  loadList();
+}
+async function deleteConv(id) {
+  if (!confirm("Xóa cuộc trò chuyện này? Toàn bộ câu hỏi và câu trả lời trong đó sẽ mất, không khôi phục được.")) return;
+  try { await api.deleteConversation(id); } catch (e) { if (e.status !== 404) return alert(`Không xóa được: ${e.message}`); }
+  if (id === convId) $("new-chat").onclick();
+  loadList();
+}
 function toggleSide(on) {
   $("side").classList.toggle("open", on);
   $("side-toggle").setAttribute("aria-expanded", on);

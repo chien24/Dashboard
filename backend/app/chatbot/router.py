@@ -1,11 +1,11 @@
-"""POST /api/chat, GET /api/chat/conversations/{id}, POST /api/chat/feedback, GET /api/chat/usage.
+"""POST /api/chat, GET/PATCH/DELETE /api/chat/conversations/{id}, POST /api/chat/feedback, GET /api/chat/usage.
 Đăng nhập do middleware require_login của app chặn (mọi /api/ đều cần cookie phiên)."""
 import time
 from collections import defaultdict, deque
 from datetime import datetime, time as dtime
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Request
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select, update
 
 from app import config
 from app.chatbot import pipeline
@@ -93,7 +93,8 @@ def conversations(limit: int = 200, db=Depends(get_db)):
     """Mọi hội thoại của tài khoản chung (mọi máy), mới dùng gần nhất trước; tiêu đề = câu hỏi đầu tiên."""
     first = (select(ChatMessage.conversation_id, func.min(ChatMessage.id).label("mid"), func.count().label("n"))
              .where(ChatMessage.role == "user").group_by(ChatMessage.conversation_id).subquery())
-    rows = db.execute(select(ChatConversation.id, ChatConversation.updated_at, ChatMessage.content, first.c.n)
+    rows = db.execute(select(ChatConversation.id, ChatConversation.updated_at,
+                             func.coalesce(ChatConversation.title, ChatMessage.content), first.c.n)
                       .join(first, first.c.conversation_id == ChatConversation.id)
                       .join(ChatMessage, ChatMessage.id == first.c.mid)
                       .order_by(ChatConversation.updated_at.desc(), ChatConversation.id.desc())
@@ -108,6 +109,27 @@ def conversation(conv_id: int, db=Depends(get_db)):
         raise HTTPException(404, "Không có cuộc trò chuyện này (có thể đã bị xóa theo chính sách lưu trữ)")
     msgs = db.scalars(select(ChatMessage).where(ChatMessage.conversation_id == conv_id).order_by(ChatMessage.id)).all()
     return {"conversation_id": conv.id, "created_at": conv.created_at, "messages": [_view(m) for m in msgs]}
+
+
+@router.patch("/conversations/{conv_id}")
+def rename_conversation(conv_id: int, title: str = Body(..., embed=True), db=Depends(get_db)):
+    """Đổi tên; chuỗi rỗng = về lại tên mặc định (câu hỏi đầu tiên). Không đẩy cuộc lên đầu danh sách."""
+    title = (title or "").strip()[:120] or None
+    n = db.execute(update(ChatConversation).where(ChatConversation.id == conv_id)
+                   .values(title=title, updated_at=ChatConversation.updated_at)).rowcount  # giữ updated_at (cột có onupdate)
+    db.commit()
+    if not n:
+        raise HTTPException(404, "Không có cuộc trò chuyện này (có thể đã bị xóa)")
+    return {"ok": True}
+
+
+@router.delete("/conversations/{conv_id}")
+def delete_conversation(conv_id: int, db=Depends(get_db)):
+    n = db.execute(delete(ChatConversation).where(ChatConversation.id == conv_id)).rowcount  # CASCADE sang messages, feedback
+    db.commit()
+    if not n:
+        raise HTTPException(404, "Không có cuộc trò chuyện này (có thể đã bị xóa)")
+    return {"ok": True}
 
 
 @router.post("/feedback")

@@ -50,6 +50,8 @@ const api = {
   chat: (message, conversationId, signal) => request("POST", "/chat", { message, conversation_id: conversationId ?? null }, signal),
   conversation: (id) => request("GET", `/chat/conversations/${id}`),
   conversations: () => request("GET", "/chat/conversations"),
+  renameConversation: (id, title) => request("PATCH", `/chat/conversations/${id}`, { title }),
+  deleteConversation: (id) => request("DELETE", `/chat/conversations/${id}`),
   chatUsage: () => request("GET", "/chat/usage"),
 };
 

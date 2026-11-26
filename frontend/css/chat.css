@@ -11,6 +11,12 @@
 .conv { display: block; width: 100%; padding: 7px 10px; border: 0; border-radius: 8px; background: none; color: var(--ink); font: inherit; font-size: 13px;
   text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
 .conv:hover { background: var(--wash); }
+.conv-row { display: flex; align-items: center; gap: 2px; border-radius: 8px; }
+.conv-row .conv { flex: 1; min-width: 0; }
+.conv-act { flex: none; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 6px; background: none; color: var(--muted); cursor: pointer; opacity: 0; }
+.conv-row:hover .conv-act, .conv-row:focus-within .conv-act, .conv-row:has([aria-current="true"]) .conv-act { opacity: 1; }
+.conv-act:hover { background: var(--wash); color: var(--ink); }
+@media (hover: none) { .conv-act { opacity: 1; } }
 .conv[aria-current="true"] { background: color-mix(in srgb, var(--accent) 12%, var(--surface)); color: var(--accent); font-weight: 600; }
 .side-note { margin: 0; }
 .side-toggle { display: none; margin-bottom: 8px; }

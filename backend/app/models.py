@@ -167,6 +167,7 @@ class ChatConversation(Base):
     __tablename__ = "chat_conversations"
     id: Mapped[int] = mapped_column(primary_key=True)
     user: Mapped[str | None] = mapped_column(String)
+    title: Mapped[str | None] = mapped_column(String)  # tên người dùng đặt; None = lấy câu hỏi đầu tiên
     created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=now, onupdate=now, index=True)
 

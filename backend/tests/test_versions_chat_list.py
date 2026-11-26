@@ -38,6 +38,30 @@ def test_danh_sach_hoi_thoai_moi_may(clean_db):
     assert [(x["conversation_id"], x["title"], x["so_cau_hoi"]) for x in r] == [(ids[1], "Công suất AVG", 1), (ids[0], "NoRead hôm qua?", 2)]
 
 
+def test_doi_ten_va_xoa_hoi_thoai(clean_db):
+    c = client()
+    with SessionLocal() as db:
+        a = ChatConversation(updated_at=now() - timedelta(days=2))
+        db.add(a)
+        db.flush()
+        db.add(ChatMessage(conversation_id=a.id, role="user", content="NoRead hôm qua?"))
+        db.commit()
+        cid, t0 = a.id, a.updated_at
+    title = lambda: c.get("/api/chat/conversations").json()[0]["title"]
+    assert c.patch(f"/api/chat/conversations/{cid}", json={"title": "  Báo cáo NoRead "}).status_code == 200
+    assert title() == "Báo cáo NoRead"
+    with SessionLocal() as db:
+        assert db.get(ChatConversation, cid).updated_at == t0  # đổi tên không đẩy lên đầu danh sách
+    c.patch(f"/api/chat/conversations/{cid}", json={"title": ""})
+    assert title() == "NoRead hôm qua?"                          # để trống: về tên mặc định
+    assert c.delete(f"/api/chat/conversations/{cid}").status_code == 200
+    assert c.get("/api/chat/conversations").json() == []
+    with SessionLocal() as db:
+        assert db.query(ChatMessage).count() == 0                # CASCADE xóa tin nhắn
+    assert c.delete(f"/api/chat/conversations/{cid}").status_code == 404
+    assert c.patch(f"/api/chat/conversations/{cid}", json={"title": "x"}).status_code == 404
+
+
 def test_xoa_hoi_thoai_sau_30_ngay(clean_db):
     from app.services.retention import cleanup
     with SessionLocal() as db:
