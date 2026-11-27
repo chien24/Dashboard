@@ -1,3 +1,0 @@
-# file Windows: giữ CRLF (batch dùng LF đôi khi nhảy nhầm nhãn goto)
-*.bat text eol=crlf
-*.iss text eol=crlf

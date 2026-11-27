@@ -14,6 +14,7 @@ from pathlib import Path
 
 import pytest
 
+from app.services.normalize import day_chuyen_key
 from ocr_folder import system_dir
 
 HERE = Path(__file__).resolve().parent
@@ -41,6 +42,9 @@ def mismatches(rec: dict, ky_vong: dict) -> list[str]:
         if field == "no_chute_danh_sach_bat_dau":
             if not rec.get("no_chute_danh_sach", "").startswith(want):
                 errs.append(f"no_chute_danh_sach: '{rec.get('no_chute_danh_sach')}' không bắt đầu bằng '{want}'")
+        elif field == "day_chuyen":  # app gộp dây chuyền theo day_chuyen_key ('CBs2' = 'CBS2'), so theo đúng quy tắc đó
+            if day_chuyen_key(rec.get(field) or "") != day_chuyen_key(want):
+                errs.append(f"{field}: OCR {rec.get(field)} / ảnh {want}")
         elif (got := actual(rec, field)) != want:
             errs.append(f"{field}: OCR {got} / ảnh {want}")
     return errs

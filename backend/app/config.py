@@ -1,26 +1,15 @@
-"""Cấu hình đọc từ .env.
-
-Chạy từ source: .env ở backend/.env (không có thì thư mục cha), dữ liệu ở backend/data/.
-Bản đóng gói (OCRDashboard.exe, PyInstaller): .env và data/ ở %LOCALAPPDATA%\\OCRDashboard (đổi bằng biến môi trường
-OCR_DASHBOARD_HOME), tạo lúc chạy lần đầu (backend/launcher.py), không nằm trong bộ cài.
-"""
+"""Cấu hình đọc từ .env (tìm ở backend/.env, nếu không có thì thư mục cha).
+Docker: biến truyền bằng env_file, không có file .env trong image; DATA_DIR=/data (xem Dockerfile)."""
 import os
-import sys
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from dotenv import load_dotenv
 
-FROZEN = getattr(sys, "frozen", False)  # True khi chạy từ OCRDashboard.exe
 BACKEND_DIR = Path(__file__).resolve().parents[1]
-# Tài nguyên chỉ đọc (frontend/, docs/): source = thư mục gốc repo; bản đóng gói = thư mục _internal (sys._MEIPASS)
-RESOURCE_DIR = Path(getattr(sys, "_MEIPASS", BACKEND_DIR.parent))
-# Chỗ ghi được (.env, data/): source = backend/; bản đóng gói = %LOCALAPPDATA%\OCRDashboard
-APP_HOME = Path(os.environ.get("OCR_DASHBOARD_HOME")
-                or (Path(os.environ.get("LOCALAPPDATA") or Path.home()) / "OCRDashboard" if FROZEN else BACKEND_DIR))
-ENV_FILE = APP_HOME / ".env"
-DATA_DIR = APP_HOME / "data"
-load_dotenv(ENV_FILE) or (not FROZEN and load_dotenv(BACKEND_DIR.parent / ".env"))
+RESOURCE_DIR = BACKEND_DIR.parent  # frontend/, docs/ (chỉ đọc)
+load_dotenv(BACKEND_DIR / ".env") or load_dotenv(BACKEND_DIR.parent / ".env")
+DATA_DIR = Path(os.environ.get("DATA_DIR") or BACKEND_DIR / "data")  # ocr.db, uploads/, logs/, embeddings.json
 
 
 def _list(name: str, default: list[str]) -> list[str]:

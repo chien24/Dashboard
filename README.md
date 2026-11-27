@@ -51,9 +51,9 @@ uvicorn app.main:app --reload
 
 Dữ liệu nằm trong `backend/data/` (`ocr.db` và `uploads/`). Xóa thư mục này là về trạng thái trống.
 
-### Cài trên máy không có Python
+### Chạy trên máy không có Python (Docker)
 
-Đóng gói thành `OCRDashboard-Setup.exe` (Python nằm sẵn trong bộ cài, `.env` và dữ liệu tạo lúc chạy lần đầu): xem [backend/packaging/README.md](backend/packaging/README.md).
+Xem [HUONG_DAN_DOCKER.md](HUONG_DAN_DOCKER.md): build image, chuyển sang máy khác bằng file `.tar`, chạy bằng `docker compose`.
 
 ### Mở cho người khác dùng qua link Vercel
 

@@ -1,0 +1,36 @@
+# OCR Dashboard. Cần file .env cạnh file này (chép từ .env.example rồi điền). Xem HUONG_DAN_DOCKER.md.
+#   docker compose up -d                       chạy web ở http://localhost:8000
+#   docker compose --profile tunnel up -d      chạy kèm Cloudflare Tunnel (cần TUNNEL_TOKEN trong .env)
+name: ocr-dashboard
+
+services:
+  app:
+    image: ocr-dashboard:latest
+    env_file: .env
+    environment:
+      # ép mọi dữ liệu vào volume /data, kể cả khi .env chép từ máy cũ có DATABASE_URL / UPLOAD_DIR / LOG_DIR
+      DATA_DIR: /data
+      DATABASE_URL: ""
+      UPLOAD_DIR: ""
+      LOG_DIR: ""
+      EMBED_CACHE: ""
+    volumes:
+      - data:/data
+    ports:
+      - "127.0.0.1:${APP_PORT:-8000}:8000"  # chỉ mở trong máy; người ngoài vào qua tunnel
+    restart: unless-stopped
+
+  tunnel:
+    image: cloudflare/cloudflared:2026.10.7
+    profiles: [tunnel]
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:-}  # hostname của tunnel trỏ tới http://app:8000
+    depends_on:
+      app:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  data:
+    name: ocr-dashboard-data  # tên cố định: down / up hay đổi thư mục chạy compose vẫn dùng lại dữ liệu cũ

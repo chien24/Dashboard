@@ -6,6 +6,10 @@
 !/HUONG_DAN_DEPLOY.md
 !/start_backend.bat
 !/.gitignore
+!/Dockerfile
+!/.dockerignore
+!/docker-compose.yml
+!/HUONG_DAN_DOCKER.md
 
 .env
 __pycache__/
@@ -17,6 +21,3 @@ backend/data/
 
 # kết quả chạy scripts/eval_chatbot.py (có câu trả lời và số liệu)
 backend/eval_results/
-# đóng gói (backend/packaging/build.bat)
-backend/packaging/build/
-backend/packaging/dist/

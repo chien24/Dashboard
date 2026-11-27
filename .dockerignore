@@ -1,0 +1,16 @@
+# Chỉ đưa code chạy app vào image. .env truyền lúc chạy (env_file), dữ liệu ở volume /data.
+*
+!backend/
+!frontend/
+!docs/user-guide/
+
+**/.env
+**/.env.*
+backend/data/
+backend/tests/
+backend/eval_results/
+**/.venv/
+**/__pycache__/
+**/.pytest_cache/
+**/*.db
+**/*.db-*

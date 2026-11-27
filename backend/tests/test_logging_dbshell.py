@@ -12,6 +12,7 @@ from app import config, logging_setup, terminal
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 import dbshell  # noqa: E402
 import env  # noqa: E402
+import fix_upload_paths  # noqa: E402
 import logs  # noqa: E402
 
 
@@ -113,6 +114,31 @@ def test_env_sua_bang_terminal(tmp_path, monkeypatch, creds, capsys, caplog):
     assert p.read_bytes() == before                                      # giá trị sai: không sửa gì
     run("unset", "LOG_DIR")
     assert "LOG_DIR" not in dotenv_values(p)
+
+
+def test_sua_duong_dan_anh_sau_khi_chuyen_may(clean_db, creds, capsys):
+    from app.api.upload import upload_url
+    from app.db import SessionLocal
+    from app.models import Upload
+
+    old = r"D:\Học\TT\project\dashboard\backend\data\uploads\2026\11\16\abc.jpg"
+    want = config.UPLOAD_DIR / "2026" / "11" / "16" / "abc.jpg"
+    with SessionLocal() as db:
+        db.add_all([Upload(original_name="1.jpg", stored_path=old, sha256="a"),
+                    Upload(original_name="x.jpg", stored_path="la/lam.jpg", sha256="b")])
+        db.commit()
+    creds()
+    fix_upload_paths.main([])                                            # chưa --apply: không ghi
+    assert "Sẽ sửa 1 dòng · bỏ qua 1" in capsys.readouterr().out
+    with SessionLocal() as db:
+        assert db.query(Upload).filter_by(sha256="a").one().stored_path == old
+    creds()
+    fix_upload_paths.main(["--apply"])
+    with SessionLocal() as db:
+        up = db.query(Upload).filter_by(sha256="a").one()
+        assert up.stored_path == str(want)
+        assert upload_url(up) == "/uploads/2026/11/16/abc.jpg"           # ảnh cũ hiện lại được
+        assert db.query(Upload).filter_by(sha256="b").one().stored_path == "la/lam.jpg"
 
 
 def test_file_log_theo_ngay_va_xoa_file_cu(log_dir, monkeypatch):
