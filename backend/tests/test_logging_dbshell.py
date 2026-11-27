@@ -55,7 +55,7 @@ def test_dbshell_chi_doc(clean_db, creds, capsys):
     creds()
     dbshell.main(["info"])
     out = capsys.readouterr().out
-    assert "File:" in out and "Báo cáo: 0" in out
+    assert ("File:" in out or "DB:" in out) and "Báo cáo: 0" in out
     creds()
     with pytest.raises(SystemExit) as e:
         dbshell.main(["sql", "DELETE FROM jobs"])
@@ -139,6 +139,46 @@ def test_sua_duong_dan_anh_sau_khi_chuyen_may(clean_db, creds, capsys):
         assert up.stored_path == str(want)
         assert upload_url(up) == "/uploads/2026/11/16/abc.jpg"           # ảnh cũ hiện lại được
         assert db.query(Upload).filter_by(sha256="b").one().stored_path == "la/lam.jpg"
+
+
+def test_chep_du_lieu_sqlite_cu_sang_db_moi(clean_db, tmp_path):
+    import hashlib
+    from datetime import date
+
+    from sqlalchemy.orm import Session
+
+    import sqlite_to_postgres
+    from app.db import SessionLocal, engine, init_db, make_engine
+    from app.models import ChatConversation, DmwcsNoChuteItem, Report, Upload
+
+    src_file = tmp_path / "cu.db"
+    src = make_engine(f"sqlite:///{src_file.as_posix()}")
+    init_db(src)
+    with Session(src) as s:
+        up = Upload(original_name="1.jpg", stored_path="x/2026/11/16/a.jpg", sha256="a")
+        s.add(up)
+        s.flush()
+        rep = Report(upload_id=up.id, loai="dmwcs_sorted", report_date=date(2026, 11, 16), data={"tổng": 5}, canh_bao=["mờ"])
+        s.add(rep)
+        s.flush()
+        s.add_all([DmwcsNoChuteItem(report_id=rep.id, chute_no=7, co_the_bi_cat=True), ChatConversation(title="cũ")])
+        s.commit()
+    src.dispose()
+    before = hashlib.sha256(src_file.read_bytes()).hexdigest()
+
+    done = sqlite_to_postgres.copy(src_file, engine)
+    assert done["reports"] == 1 and done["uploads"] == 1 and done["dmwcs_no_chute_items"] == 1
+    assert done["chat_conversations"] == 1
+    assert hashlib.sha256(src_file.read_bytes()).hexdigest() == before   # không sửa file cũ
+    with SessionLocal() as db:
+        r = db.query(Report).one()
+        assert r.data == {"tổng": 5} and r.canh_bao == ["mờ"] and r.upload.original_name == "1.jpg"
+        assert db.query(DmwcsNoChuteItem).one().co_the_bi_cat is True
+        db.add(Upload(original_name="2.jpg", stored_path="y", sha256="b"))
+        db.commit()                                                       # id mới không đụng id đã chép
+        assert sorted(u.id for u in db.query(Upload)) == [1, 2]
+    with pytest.raises(SystemExit, match="đã có dữ liệu"):
+        sqlite_to_postgres.copy(src_file, engine)
 
 
 def test_file_log_theo_ngay_va_xoa_file_cu(log_dir, monkeypatch):

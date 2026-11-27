@@ -1,6 +1,4 @@
-"""sql_guard phải chặn mọi thứ ngoài 1 câu SELECT trên 7 view (mục 12)."""
-import sqlite3
-
+"""sql_guard phải chặn mọi thứ ngoài 1 câu SELECT trên 7 view (mục 12). Chạy được trên SQLite và PostgreSQL."""
 import pytest
 
 from app.chatbot import executor
@@ -30,6 +28,14 @@ BLOCKED = [
     "SELECT readfile('C:/secret.txt')",
     "SELECT * FROM pragma_table_info('reports')",
     "SELECT sqlite_version()",
+    "SELECT pg_read_file('/etc/passwd')",
+    "SELECT * FROM pg_catalog.pg_user",
+    "SELECT * FROM pg_user",
+    "SELECT * FROM information_schema.tables",
+    "SELECT query_to_xml('SELECT * FROM reports', true, false, '')",
+    "SELECT set_config('default_transaction_read_only', 'off', false)",
+    "SELECT * FROM pg_ls_dir('/') AS f",
+    "SELECT * FROM dblink('host=x', 'SELECT 1') AS t(a int)",
     "",
 ]
 ALLOWED = [
@@ -53,21 +59,21 @@ def test_allowed(sql):
 
 
 def test_wrap_keeps_trailing_comment_harmless():
-    assert "\n) LIMIT 201" in wrap_limit(check(ALLOWED[-1]), 200)
+    assert "\n) AS q LIMIT 201" in wrap_limit(check(ALLOWED[-1]), 200)
 
 
 def test_executor_is_read_only(clean_db):
-    with pytest.raises(sqlite3.OperationalError):
+    with pytest.raises(executor.SqlError):
         executor.run("DELETE FROM reports")  # lớp 1 vẫn chặn kể cả khi sql_guard bị lọt
 
 
 def test_executor_truncates(clean_db):
-    cols, rows, truncated = executor.run("WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n LIMIT 300) "
+    cols, rows, truncated = executor.run("WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i < 300) "
                                          "SELECT i FROM n", max_rows=200)
     assert cols == ["i"] and len(rows) == 200 and truncated
 
 
 def test_executor_timeout(clean_db):
-    slow = "WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n) SELECT COUNT(*) FROM n"
+    slow = "WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i < 100000000) SELECT COUNT(*) FROM n"
     with pytest.raises(executor.SqlTimeout):
         executor.run(slow, timeout_s=0.3)

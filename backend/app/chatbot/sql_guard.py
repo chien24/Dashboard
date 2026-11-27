@@ -2,10 +2,16 @@
 import sqlglot
 from sqlglot import exp
 
+from app import config
+
 VIEWS = frozenset({"v_scada_summary", "v_scada_abnormal", "v_dmwcs_sorted", "v_dmwcs_no_chute",
                    "v_dmwcs_capacity", "v_dmwcs_bcr", "v_report_quality"})
+# chặn cho cả 2 loại DB: hàm đọc/ghi file, chạy SQL từ chuỗi (*_to_xml), đổi cấu hình phiên
 BAD_FUNCS = frozenset({"load_extension", "readfile", "writefile", "edit", "fts3_tokenizer", "zipfile", "sqlar_compress",
-                       "sqlar_uncompress"})
+                       "sqlar_uncompress", "set_config", "current_setting", "query_to_xml", "query_to_xml_and_xmlschema",
+                       "table_to_xml", "cursor_to_xml", "schema_to_xml", "database_to_xml", "xpath"})
+BAD_PREFIXES = ("sqlite_", "pragma_", "pg_", "lo_", "dblink")
+DIALECT = "postgres" if config.IS_POSTGRES else "sqlite"
 BAD_NODES = (exp.Insert, exp.Update, exp.Delete, exp.Drop, exp.Create, exp.Alter, exp.Command, exp.Pragma,
              exp.Attach, exp.Detach, exp.Transaction, exp.Commit, exp.Rollback)
 
@@ -26,7 +32,7 @@ def check(sql: str) -> str:
     if not sql:
         raise GuardError("SQL rỗng")
     try:
-        stmts = [s for s in sqlglot.parse(sql, read="sqlite") if s is not None]
+        stmts = [s for s in sqlglot.parse(sql, read=DIALECT) if s is not None]
     except sqlglot.errors.SqlglotError as e:
         raise GuardError(f"SQL không parse được: {str(e)[:300]}")
     if len(stmts) != 1:
@@ -41,18 +47,20 @@ def check(sql: str) -> str:
     if clash := ctes & (_base_tables() | VIEWS):
         raise GuardError(f"Tên CTE trùng tên bảng/view: {', '.join(sorted(clash))}")
     for t in st.find_all(exp.Table):
+        if isinstance(t.this, exp.Func):  # hàm trả bảng (generate_series...): tên hàm kiểm ở vòng BAD_FUNCS dưới
+            continue
         name = (t.name or "").lower()
         if t.args.get("db") or t.args.get("catalog"):
             raise GuardError(f"Không được chỉ định schema: {t.sql()}")
         if name not in VIEWS and name not in ctes:
             raise GuardError(f"Chỉ được truy vấn 7 view {', '.join(sorted(VIEWS))}; không được dùng '{t.sql() or name}'")
     for f in st.find_all(exp.Func):
-        name = f.sql(dialect="sqlite").split("(", 1)[0].strip().lower()  # tên đúng như SQLite sẽ chạy
-        if name in BAD_FUNCS or name.startswith(("sqlite_", "pragma_")):
+        name = f.sql(dialect=DIALECT).split("(", 1)[0].strip().lower()  # tên đúng như DB sẽ chạy
+        if name in BAD_FUNCS or name.startswith(BAD_PREFIXES):
             raise GuardError(f"Không được dùng hàm {name}")
     return sql
 
 
 def wrap_limit(sql: str, max_rows: int) -> str:
     """Bọc giới hạn dòng; xuống dòng để comment '--' cuối câu không nuốt dấu ')'."""
-    return f"SELECT * FROM (\n{sql}\n) LIMIT {max_rows + 1}"
+    return f"SELECT * FROM (\n{sql}\n) AS q LIMIT {max_rows + 1}"

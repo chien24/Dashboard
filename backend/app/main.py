@@ -89,4 +89,5 @@ class FrontendFiles(StaticFiles):
         return resp
 
 
-app.mount("/", FrontendFiles(directory=FRONTEND), name="frontend")  # mount cuối để không che /api
+if FRONTEND.is_dir():  # Docker: FE là container nginx riêng, image BE không có frontend/
+    app.mount("/", FrontendFiles(directory=FRONTEND), name="frontend")  # mount cuối để không che /api

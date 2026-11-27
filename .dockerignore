@@ -1,7 +1,7 @@
-# Chỉ đưa code chạy app vào image. .env truyền lúc chạy (env_file), dữ liệu ở volume /data.
+# Build context của BE (backend/Dockerfile, chạy từ thư mục gốc): chỉ code BE + tài liệu cho chatbot.
+# FE và database có Dockerfile riêng trong frontend/ và database/. .env truyền lúc chạy (env_file).
 *
 !backend/
-!frontend/
 !docs/user-guide/
 
 **/.env
@@ -9,6 +9,7 @@
 backend/data/
 backend/tests/
 backend/eval_results/
+backend/Dockerfile
 **/.venv/
 **/__pycache__/
 **/.pytest_cache/

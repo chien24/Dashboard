@@ -12,3 +12,4 @@ httpx
 sqlglot==30.30.0
 pyyaml
 tzdata  # Windows không có dữ liệu múi giờ: ZoneInfo("Asia/Ho_Chi_Minh") cần gói này
+psycopg[binary]>=3.2  # PostgreSQL (Docker); chạy từ source với SQLite thì không dùng tới

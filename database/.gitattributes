@@ -1,0 +1,2 @@
+# script chạy trong Linux: giữ LF (CRLF làm "set -eu" và heredoc lỗi)
+*.sh text eol=lf

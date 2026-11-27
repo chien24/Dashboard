@@ -1,23 +1,55 @@
-# OCR Dashboard. Cần file .env cạnh file này (chép từ .env.example rồi điền). Xem HUONG_DAN_DOCKER.md.
+# OCR Dashboard: 3 container nối nhau qua cổng trong mạng nội bộ của Docker
+#   frontend (nginx :8080)  --/api, /uploads-->  backend (FastAPI :8000)  -->  db (PostgreSQL :5432)
+# Chỉ frontend mở cổng ra máy (127.0.0.1). Cần file .env cạnh file này (chép từ .env.example rồi điền). Xem HUONG_DAN_DOCKER.md.
 #   docker compose up -d                       chạy web ở http://localhost:8000
 #   docker compose --profile tunnel up -d      chạy kèm Cloudflare Tunnel (cần TUNNEL_TOKEN trong .env)
+# Mật khẩu database chỉ dùng chữ và số (nằm trong URL kết nối).
 name: ocr-dashboard
 
 services:
-  app:
-    image: ocr-dashboard:latest
+  db:
+    build: ./database
+    image: ocr-dashboard-db:latest
+    environment:  # KHÔNG dùng env_file: database không cần (và không được thấy) API key
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Điền POSTGRES_PASSWORD trong .env}
+      DB_PASSWORD: ${DB_PASSWORD:?Điền DB_PASSWORD trong .env}
+      DB_RO_PASSWORD: ${DB_RO_PASSWORD:?Điền DB_RO_PASSWORD trong .env}
+    volumes:
+      - db:/var/lib/postgresql/data
+    expose: ["5432"]
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: ocr-dashboard-backend:latest
     env_file: .env
     environment:
-      # ép mọi dữ liệu vào volume /data, kể cả khi .env chép từ máy cũ có DATABASE_URL / UPLOAD_DIR / LOG_DIR
+      DATABASE_URL: postgresql+psycopg://ocr:${DB_PASSWORD}@db:5432/ocr
+      CHAT_DATABASE_URL: postgresql+psycopg://ocr_ro:${DB_RO_PASSWORD}@db:5432/ocr  # chatbot: chỉ đọc 7 view
+      POSTGRES_PASSWORD: ""  # mật khẩu superuser chỉ db cần, không để lộ trong BE
+      # ảnh, log, cache chatbot vào volume /data, kể cả khi .env chép từ máy cũ có UPLOAD_DIR / LOG_DIR
       DATA_DIR: /data
-      DATABASE_URL: ""
       UPLOAD_DIR: ""
       LOG_DIR: ""
       EMBED_CACHE: ""
     volumes:
       - data:/data
+    expose: ["8000"]
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    image: ocr-dashboard-frontend:latest
     ports:
-      - "127.0.0.1:${APP_PORT:-8000}:8000"  # chỉ mở trong máy; người ngoài vào qua tunnel
+      - "127.0.0.1:${APP_PORT:-8000}:8080"  # chỉ mở trong máy; người ngoài vào qua tunnel
+    depends_on:
+      backend:
+        condition: service_healthy
     restart: unless-stopped
 
   tunnel:
@@ -25,12 +57,14 @@ services:
     profiles: [tunnel]
     command: tunnel --no-autoupdate run
     environment:
-      TUNNEL_TOKEN: ${TUNNEL_TOKEN:-}  # hostname của tunnel trỏ tới http://app:8000
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:-}  # hostname của tunnel trỏ tới http://frontend:8080
     depends_on:
-      app:
+      frontend:
         condition: service_healthy
     restart: unless-stopped
 
 volumes:
+  db:
+    name: ocr-dashboard-db    # tên cố định: down / up hay đổi thư mục chạy compose vẫn dùng lại dữ liệu cũ
   data:
-    name: ocr-dashboard-data  # tên cố định: down / up hay đổi thư mục chạy compose vẫn dùng lại dữ liệu cũ
+    name: ocr-dashboard-data  # ảnh đã upload, log, cache chatbot

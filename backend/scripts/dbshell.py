@@ -9,17 +9,19 @@
     py scripts/dbshell.py providers         # trạng thái provider/model OCR (cooldown, lỗi)
     py scripts/dbshell.py sql "SELECT loai, COUNT(*) FROM reports GROUP BY loai"
 
-Mở SQLite ở chế độ readonly: lệnh ghi/sửa/xóa đều bị từ chối, không đổi được dữ liệu.
+Mở DB ở chế độ readonly (SQLite: mode=ro; PostgreSQL: transaction READ ONLY): lệnh ghi/sửa/xóa đều bị từ chối.
+Docker:  docker compose exec backend python scripts/dbshell.py info
 """
 import argparse
-import sqlite3
 import sys
 from datetime import datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from app import terminal  # noqa: E402
+from sqlalchemy.engine import make_url  # noqa: E402
+
+from app import config, terminal  # noqa: E402
 from app.chatbot import executor  # noqa: E402
 
 CELL = 60
@@ -39,16 +41,21 @@ def table(cols, rows, truncated=False, more="-n"):
 
 
 def q(sql, params=(), max_rows=None, timeout=30):
-    return executor.run(sql, params, max_rows=max_rows, timeout_s=timeout)
+    # DATABASE_URL (không phải role chỉ đọc 7 view của chatbot): xem được mọi bảng, vẫn mở chỉ đọc
+    return executor.run(sql, params, max_rows=max_rows, timeout_s=timeout, url=config.DATABASE_URL)
 
 
 def cmd_info(_):
-    p = executor.db_path().resolve()
-    print(f"File: {p}")
-    if not p.exists():
-        sys.exit("Chưa có file DB ở đường dẫn trên. Kiểm tra DATABASE_URL và thư mục đang đứng (phải cd backend).")
-    st = p.stat()
-    print(f"Dung lượng: {st.st_size / 1024 / 1024:.1f} MB · sửa lúc {datetime.fromtimestamp(st.st_mtime):%Y-%m-%d %H:%M:%S}")
+    if config.IS_POSTGRES:
+        print(f"DB: {make_url(config.DATABASE_URL).render_as_string(hide_password=True)}")
+        print(f"Dung lượng: {q('SELECT pg_database_size(current_database())')[1][0][0] / 1024 / 1024:.1f} MB")
+    else:
+        p = executor.db_path().resolve()
+        print(f"File: {p}")
+        if not p.exists():
+            sys.exit("Chưa có file DB ở đường dẫn trên. Kiểm tra DATABASE_URL và thư mục đang đứng (phải cd backend).")
+        st = p.stat()
+        print(f"Dung lượng: {st.st_size / 1024 / 1024:.1f} MB · sửa lúc {datetime.fromtimestamp(st.st_mtime):%Y-%m-%d %H:%M:%S}")
     one = lambda sql: q(sql)[1][0]  # noqa: E731
     n, tu, den = one("SELECT COUNT(*), MIN(report_date), MAX(report_date) FROM reports")
     print(f"Báo cáo: {n}" + (f" (ngày {tu} → {den})" if n else ""))
@@ -58,17 +65,32 @@ def cmd_info(_):
     print(f"Hội thoại chatbot: {one('SELECT COUNT(*) FROM chat_conversations')[0]}")
 
 
+PG_TABLES = ("SELECT table_name, CASE table_type WHEN 'VIEW' THEN 'view' ELSE 'table' END FROM information_schema.tables "
+             "WHERE table_schema = 'public' ORDER BY 2, 1")
+PG_COLUMNS = ("SELECT c.column_name, c.data_type, (c.is_nullable = 'NO')::int, c.column_default, "
+              "(EXISTS (SELECT 1 FROM information_schema.key_column_usage k JOIN information_schema.table_constraints t "
+              "ON t.constraint_name = k.constraint_name AND t.constraint_type = 'PRIMARY KEY' "
+              "WHERE k.table_name = c.table_name AND k.column_name = c.column_name))::int "
+              "FROM information_schema.columns c WHERE c.table_schema = 'public' AND c.table_name = ? "
+              "ORDER BY c.ordinal_position")
+
+
 def cmd_tables(_):
-    names = q("SELECT name, type FROM sqlite_master WHERE type IN ('table','view') AND name NOT LIKE 'sqlite_%' "
+    names = q(PG_TABLES if config.IS_POSTGRES else
+              "SELECT name, type FROM sqlite_master WHERE type IN ('table','view') AND name NOT LIKE 'sqlite_%' "
               "ORDER BY type, name")[1]
     table(["ten", "loai", "so_dong"], [[n, t, q(f'SELECT COUNT(*) FROM "{n}"')[1][0][0]] for n, t in names])
 
 
 def cmd_schema(a):
-    if not q("SELECT 1 FROM sqlite_master WHERE name = ?", (a.name,))[1]:
+    if config.IS_POSTGRES:
+        rows = q(PG_COLUMNS, (a.name,))[1]
+    else:
+        rows = [r[1:6] for r in q(f'PRAGMA table_info("{a.name}")')[1]] if q(
+            "SELECT 1 FROM sqlite_master WHERE name = ?", (a.name,))[1] else []
+    if not rows:
         sys.exit(f"Không có bảng / view '{a.name}'. Xem danh sách: py scripts/dbshell.py tables")
-    cols, rows, _ = q(f'PRAGMA table_info("{a.name}")')
-    table(["cot", "kieu", "bat_buoc", "mac_dinh", "khoa_chinh"], [[r[1], r[2], r[3], r[4], r[5]] for r in rows])
+    table(["cot", "kieu", "bat_buoc", "mac_dinh", "khoa_chinh"], rows)
 
 
 def cmd_jobs(a):
@@ -110,17 +132,15 @@ def main(argv=None):
     s.set_defaults(fn=cmd_sql)
     args = ap.parse_args(argv)
     terminal.start("dbshell.py")
-    if args.cmd != "info" and not executor.db_path().exists():
+    if args.cmd != "info" and not config.IS_POSTGRES and not executor.db_path().exists():
         sys.exit(f"Chưa có file DB: {executor.db_path().resolve()}")
     try:
         args.fn(args)
-    except sqlite3.OperationalError as e:
+    except executor.SqlError as e:
         msg = str(e)
         if "readonly" in msg or "read-only" in msg:
             sys.exit(f"Lỗi: {msg}. DB mở ở chế độ readonly, lệnh này không sửa được dữ liệu.")
         sys.exit(f"Lỗi SQL: {msg}")
-    except (sqlite3.Error, executor.SqlTimeout) as e:
-        sys.exit(f"Lỗi SQL: {e}")
 
 
 if __name__ == "__main__":

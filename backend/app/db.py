@@ -1,4 +1,4 @@
-"""Engine SQLAlchemy, session và init_db(). SQLite mặc định; đổi DATABASE_URL để dùng PostgreSQL."""
+"""Engine SQLAlchemy, session và init_db(). SQLite mặc định; Docker dùng PostgreSQL (DATABASE_URL=postgresql+psycopg://...)."""
 from pathlib import Path
 
 from sqlalchemy import create_engine, event
@@ -41,12 +41,18 @@ def init_db(eng=None):
     if "title" not in {c["name"] for c in inspect(eng).get_columns("chat_conversations")}:
         with eng.begin() as c:
             c.execute(text("ALTER TABLE chat_conversations ADD COLUMN title VARCHAR"))
-    if eng.dialect.name == "sqlite":  # create_all không tạo view; view của chatbot viết cho SQLite
-        conn = eng.raw_connection()
-        try:
-            conn.executescript((Path(__file__).parent / "chatbot" / "views.sql").read_text(encoding="utf-8"))
-        finally:
-            conn.close()
+    # create_all không tạo view: view của chatbot viết riêng cho từng loại DB (cùng tên cột)
+    views = Path(__file__).parent / "chatbot" / ("views_postgres.sql" if eng.dialect.name == "postgresql" else "views.sql")
+    conn = eng.raw_connection()
+    try:
+        if eng.dialect.name == "sqlite":
+            conn.executescript(views.read_text(encoding="utf-8"))
+        else:
+            with conn.cursor() as cur:
+                cur.execute(views.read_text(encoding="utf-8"))  # psycopg chạy được nhiều câu khi không có tham số
+            conn.commit()
+    finally:
+        conn.close()
 
 
 def get_db():

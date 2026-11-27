@@ -6,7 +6,7 @@
 !/HUONG_DAN_DEPLOY.md
 !/start_backend.bat
 !/.gitignore
-!/Dockerfile
+!/database/
 !/.dockerignore
 !/docker-compose.yml
 !/HUONG_DAN_DOCKER.md

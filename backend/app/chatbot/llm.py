@@ -7,7 +7,7 @@ import re
 from datetime import datetime, timedelta
 
 from sqlalchemy import select
-from sqlalchemy.dialects.sqlite import insert
+from sqlalchemy.dialects import postgresql, sqlite
 
 from app import config
 from app.db import SessionLocal
@@ -80,13 +80,14 @@ def next_retry_at(pairs: list[tuple[str, str]]) -> datetime | None:
 
 def record_usage(provider: str, model: str, prompt_tokens: int, completion_tokens: int):
     """Cộng dồn token theo ngày + provider + model (UPSERT nguyên tử, nhiều luồng gọi cùng lúc vẫn đúng)."""
-    stmt = insert(ChatTokenUsage).values(ngay=now().date(), provider=provider, model=model, requests=1,
-                                         prompt_tokens=prompt_tokens, completion_tokens=completion_tokens)
-    stmt = stmt.on_conflict_do_update(index_elements=["ngay", "provider", "model"], set_={
-        "requests": ChatTokenUsage.requests + 1,
-        "prompt_tokens": ChatTokenUsage.prompt_tokens + stmt.excluded.prompt_tokens,
-        "completion_tokens": ChatTokenUsage.completion_tokens + stmt.excluded.completion_tokens})
     with SessionLocal() as db:
+        insert = (postgresql if db.bind.dialect.name == "postgresql" else sqlite).insert  # cùng cú pháp ON CONFLICT
+        stmt = insert(ChatTokenUsage).values(ngay=now().date(), provider=provider, model=model, requests=1,
+                                             prompt_tokens=prompt_tokens, completion_tokens=completion_tokens)
+        stmt = stmt.on_conflict_do_update(index_elements=["ngay", "provider", "model"], set_={
+            "requests": ChatTokenUsage.requests + 1,
+            "prompt_tokens": ChatTokenUsage.prompt_tokens + stmt.excluded.prompt_tokens,
+            "completion_tokens": ChatTokenUsage.completion_tokens + stmt.excluded.completion_tokens})
         db.execute(stmt)
         db.commit()
 

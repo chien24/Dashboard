@@ -16,6 +16,18 @@ DATE_VIEWS = ("v_scada_summary", "v_scada_abnormal", "v_dmwcs_sorted", "v_dmwcs_
               "v_dmwcs_bcr", "v_report_quality")
 _cache: dict = {}  # db path -> (thời điểm, giá trị)
 CACHE_S = 300
+DB_NAME = "PostgreSQL" if config.IS_POSTGRES else "SQLite"
+PG_RULES = ("# Cú pháp PostgreSQL\n"
+            "- Mọi cột không gộp (không SUM/MAX...) trong SELECT phải có trong GROUP BY.\n"
+            "- Chia 2 số nguyên thì nhân 100.0 hoặc 1.0 trước. ROUND(x, 2) cần x kiểu numeric: cột số của view đã là numeric; "
+            "biểu thức khác thì ép (x)::numeric.\n"
+            "- ngay kiểu DATE: cộng ngày ngay + 1, dãy ngày generate_series('2026-11-01'::date, '2026-11-19', '1 day')::date. "
+            "So sánh chữ phân biệt hoa thường (tìm gần đúng dùng ILIKE).")
+
+
+def example_sql(answer: dict) -> str | None:
+    """SQL của 1 ví dụ cho DB đang dùng: ví dụ không viết chung được cho 2 DB thì có thêm sql_postgres."""
+    return answer.get("sql_postgres") if config.IS_POSTGRES and answer.get("sql_postgres") else answer.get("sql")
 
 
 @lru_cache
@@ -52,7 +64,7 @@ def time_block(today: date) -> str:
 
 def db_values() -> dict:
     """Giá trị thực trong DB, cache 5 phút: dây chuyền, loại bất thường, ngày có dữ liệu của từng view."""
-    key = str(executor.db_path())
+    key = config.CHAT_DATABASE_URL
     hit = _cache.get(key)
     if hit and time.monotonic() - hit[0] < CACHE_S:
         return hit[1]
@@ -80,7 +92,9 @@ def values_block(v: dict) -> str:
 def examples_block(question: str) -> str:
     out = ["Ví dụ (giả sử hôm nay 2026-11-19, thứ Năm; luôn tính ngày theo Hôm nay thật):"]
     for ex in fewshot.pick(question, examples()):
-        ans = {k: v for k, v in ex["answer"].items() if k != "giai_thich"}  # định dạng đã nêu ở luật, bớt token
+        ans = {k: v for k, v in ex["answer"].items() if k not in ("giai_thich", "sql_postgres")}  # bớt token
+        if ans.get("sql"):
+            ans["sql"] = example_sql(ex["answer"])
         out.append(f"Hỏi: {ex['question']}\n{json.dumps(ans, ensure_ascii=False, separators=(',', ':'))}")
     return "\n".join(out)
 
@@ -97,9 +111,10 @@ def history_block(history: list[dict]) -> str:
 
 def sql_messages(question: str, history: list[dict], today: date) -> list[dict]:
     system = "\n\n".join(x for x in [
-        prompt_file("system_sql.md"),
+        prompt_file("system_sql.md").replace("SQLite", DB_NAME),
+        PG_RULES if config.IS_POSTGRES else "",
         "# Thời gian\n" + time_block(today),
-        prompt_file("schema.md"),
+        prompt_file("schema.md").replace("SQLite", DB_NAME),
         "# Dữ liệu hiện có\n" + values_block(db_values()),
         "# " + examples_block(question),
         history_block(history),

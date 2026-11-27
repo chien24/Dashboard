@@ -2,7 +2,6 @@
 import json
 import logging
 import math
-import sqlite3
 import time
 from datetime import date
 
@@ -104,7 +103,7 @@ def ask(question: str, history: list[dict] | None = None, today: date | None = N
             sql = check(plan["sql"])
             cols, rows, truncated = executor.run(wrap_limit(sql, config.CHAT_MAX_ROWS), max_rows=config.CHAT_MAX_ROWS)
             break
-        except (GuardError, sqlite3.Error, executor.SqlTimeout) as e:
+        except (GuardError, executor.SqlError) as e:
             err = f"{type(e).__name__}: {e}"
             log.info("SQL lỗi (lần %d): %s", attempt + 1, err)
             if attempt == config.CHAT_SQL_RETRIES:

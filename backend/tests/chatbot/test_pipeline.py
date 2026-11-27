@@ -7,7 +7,8 @@ import pytest
 from app import config
 from app.chatbot import context, executor, llm as llm_mod, pipeline
 from app.chatbot.sql_guard import check
-from app.db import Base, engine, init_db
+from app.db import init_db
+from tests.conftest import drop_all
 
 TODAY = date(2026, 11, 16)
 
@@ -45,13 +46,13 @@ def plan(sql, tu="2026-11-15", den=None, views=("v_dmwcs_sorted",)):
 def seeded():
     from eval_chatbot import seed
 
-    Base.metadata.drop_all(engine)
+    drop_all()
     init_db()
     seed()
     context._cache.clear()
     pipeline._sql_cache.clear()
     yield
-    Base.metadata.drop_all(engine)
+    drop_all()
     init_db()
 
 
@@ -71,7 +72,7 @@ def fresh(monkeypatch):
 def test_views_exist_and_examples_run():
     for ex in context.examples():
         if ex["answer"]["loai"] == "sql":
-            executor.run(check(ex["answer"]["sql"]))  # chạy được trên view thật, qua được guard
+            executor.run(check(context.example_sql(ex["answer"])))  # chạy được trên view thật (DB đang dùng), qua guard
 
 
 def test_fewshot_picks_nearest_and_keeps_non_sql(monkeypatch):

@@ -11,7 +11,7 @@
 - question: "REJECT từng dây chuyền HT1 ngày gần nhất"
   answer:
     loai: sql
-    sql: "SELECT s.ngay, s.day_chuyen, s.so_luong_da_quet AS all_kien, SUM(CASE WHEN a.loai_key IN ('NO_BARCODE', 'CHUTE_REQUEST_FAILED') THEN a.so_luong ELSE 0 END) AS reject_kien, ROUND(100.0 * SUM(CASE WHEN a.loai_key IN ('NO_BARCODE', 'CHUTE_REQUEST_FAILED') THEN a.so_luong ELSE 0 END) / s.so_luong_da_quet, 2) AS ty_le_reject_pct FROM v_scada_summary s LEFT JOIN v_scada_abnormal a ON a.report_id = s.report_id WHERE s.ngay = (SELECT MAX(ngay) FROM v_scada_summary) GROUP BY s.report_id ORDER BY ty_le_reject_pct DESC"
+    sql: "SELECT s.ngay, s.day_chuyen, s.so_luong_da_quet AS all_kien, SUM(CASE WHEN a.loai_key IN ('NO_BARCODE', 'CHUTE_REQUEST_FAILED') THEN a.so_luong ELSE 0 END) AS reject_kien, ROUND(100.0 * SUM(CASE WHEN a.loai_key IN ('NO_BARCODE', 'CHUTE_REQUEST_FAILED') THEN a.so_luong ELSE 0 END) / s.so_luong_da_quet, 2) AS ty_le_reject_pct FROM v_scada_summary s LEFT JOIN v_scada_abnormal a ON a.report_id = s.report_id WHERE s.ngay = (SELECT MAX(ngay) FROM v_scada_summary) GROUP BY s.report_id, s.ngay, s.day_chuyen, s.so_luong_da_quet ORDER BY ty_le_reject_pct DESC"
     pham_vi: {he_thong: HT1, views: [v_scada_summary, v_scada_abnormal], tu_ngay: "2026-11-03", den_ngay: "2026-11-03"}
     giai_thich: "REJECT HT1 = Không Có Mã Vạch + Yêu cầu ống dẫn thất bại, theo dây chuyền, ngày gần nhất có dữ liệu"
 
@@ -196,6 +196,7 @@
   answer:
     loai: sql
     sql: "WITH RECURSIVE d(ngay) AS (SELECT '2026-11-01' UNION ALL SELECT date(ngay, '+1 day') FROM d WHERE ngay < '2026-11-19') SELECT ngay AS ngay_thieu FROM d WHERE ngay NOT IN (SELECT ngay FROM v_report_quality WHERE loai = 'dmwcs_sorted' AND dang_hien_thi = 1) ORDER BY ngay"
+    sql_postgres: "SELECT d::date AS ngay_thieu FROM generate_series('2026-11-01'::date, '2026-11-19'::date, '1 day') AS d WHERE d::date NOT IN (SELECT ngay FROM v_report_quality WHERE loai = 'dmwcs_sorted' AND dang_hien_thi = 1) ORDER BY 1"
     pham_vi: {he_thong: HT2, views: [v_report_quality], tu_ngay: "2026-11-01", den_ngay: "2026-11-19"}
     giai_thich: "Các ngày tháng này không có report Sorted đang hiển thị"
 

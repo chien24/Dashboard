@@ -18,6 +18,9 @@ def _list(name: str, default: list[str]) -> list[str]:
 
 
 DATABASE_URL = os.environ.get("DATABASE_URL") or f"sqlite:///{DATA_DIR / 'ocr.db'}"
+IS_POSTGRES = DATABASE_URL.startswith("postgresql")
+# Chatbot chạy SQL do LLM viết: Postgres dùng role chỉ được SELECT trên 7 view (database/init); SQLite mở file chỉ đọc
+CHAT_DATABASE_URL = os.environ.get("CHAT_DATABASE_URL") or DATABASE_URL
 UPLOAD_DIR = Path(os.environ.get("UPLOAD_DIR") or DATA_DIR / "uploads")
 RETENTION_DAYS = int(os.environ.get("RETENTION_DAYS", 35))
 TIMEZONE = os.environ.get("TIMEZONE", "Asia/Ho_Chi_Minh")
