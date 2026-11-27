@@ -69,7 +69,7 @@ Gửi cho máy nhận **3 file**:
 
 5. Mở trình duyệt: **http://localhost:8000**
 
-App tự khởi động lại khi máy khởi động lại, miễn là Docker Desktop được bật cùng Windows.
+App tự khởi động lại khi máy khởi động lại, miễn là Docker Desktop được bật cùng Windows: trong Docker Desktop, **Settings → General**, bật **Start Docker Desktop when you sign in to your computer**.
 
 **Đổi cổng:** thêm dòng `APP_PORT=8080` vào `.env`, rồi chạy `docker compose up -d`.
 
@@ -111,18 +111,28 @@ docker compose up -d
 
 ---
 
-## 4. Cloudflare Tunnel (tùy chọn: cho người ngoài truy cập)
+## 4. Cloudflare Tunnel (cho người ngoài truy cập)
 
-1. Trên Cloudflare Zero Trust, tạo tunnel rồi lấy **token**.
-2. Trong phần **Public Hostname** của tunnel, cho hostname trỏ tới **`http://frontend:8080`**. Phải là `frontend`, không phải `localhost`.
-3. Điền `TUNNEL_TOKEN=<token>` vào `.env`.
-4. Chạy kèm tunnel:
+### Cách A, đang dùng: tunnel chạy dạng Windows service
 
-   ```powershell
-   docker compose --profile tunnel up -d
-   ```
+Làm theo mục 3–5 của [HUONG_DAN_DEPLOY.md](HUONG_DAN_DEPLOY.md): cài `cloudflared` thành Windows service, route trỏ tới **`http://localhost:8000`** (cổng mà `frontend` mở trên máy). Cách này:
 
-Tắt tunnel nhưng giữ web: `docker compose stop tunnel`.
+- **không** cần `TUNNEL_TOKEN` trong `.env` (để trống);
+- **không** chạy profile `tunnel`;
+- tunnel tự chạy khi bật máy, độc lập với Docker.
+
+Tunnel đã có sẵn, chỉ cần cài lên máy mới: trên Cloudflare mở tunnel, bấm **+ Add a replica**, chọn **Windows**, rồi chạy lệnh `cloudflared.exe service install <token>` trong PowerShell mở bằng quyền Administrator. **Không** bấm _Rotate token_.
+
+### Cách B: tunnel chạy trong Docker
+
+1. Trên Cloudflare mở tunnel, bấm **+ Add a replica**, chọn **Docker**, copy phần sau `--token` (chuỗi `eyJ...`).
+2. Điền `TUNNEL_TOKEN=<token>` vào `.env`.
+3. Sửa route của tunnel: Service URL thành **`http://frontend:8080`**. Phải là `frontend`, không phải `localhost`.
+4. Chạy kèm tunnel: `docker compose --profile tunnel up -d`.
+
+⚠️ **Không dùng song song cách A và cách B** cho cùng một tunnel. Cloudflare sẽ chia lượt truy cập cho cả hai replica, mà mỗi bên chỉ hiểu một kiểu route (`localhost:8000` hoặc `frontend:8080`), nên khoảng một nửa lượt vào web báo lỗi. Chuyển sang cách B thì gỡ service Windows trước: `cloudflared service uninstall` (PowerShell Admin).
+
+Tắt tunnel nhưng giữ web (cách B): `docker compose stop tunnel`.
 
 ---
 

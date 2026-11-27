@@ -2,7 +2,8 @@
 #   frontend (nginx :8080)  --/api, /uploads-->  backend (FastAPI :8000)  -->  db (PostgreSQL :5432)
 # Chỉ frontend mở cổng ra máy (127.0.0.1). Cần file .env cạnh file này (chép từ .env.example rồi điền). Xem HUONG_DAN_DOCKER.md.
 #   docker compose up -d                       chạy web ở http://localhost:8000
-#   docker compose --profile tunnel up -d      chạy kèm Cloudflare Tunnel (cần TUNNEL_TOKEN trong .env)
+#   docker compose --profile tunnel up -d      chạy kèm Cloudflare Tunnel trong Docker (cách B, cần TUNNEL_TOKEN).
+#   Tunnel cài dạng Windows service trỏ tới http://localhost:8000 (cách A) thì KHÔNG cần profile này.
 # Mật khẩu database chỉ dùng chữ và số (nằm trong URL kết nối).
 name: ocr-dashboard
 
